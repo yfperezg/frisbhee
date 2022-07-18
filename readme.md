@@ -1,2 +1,2 @@
-# FRISBEE
-# FRIedmann Solver for Black hole Evaporation in the Early universe
+# FRISBHEE
+# FRIedmann Solver for Black Hole Evaporation in the Early universe
