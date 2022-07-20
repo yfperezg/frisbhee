@@ -29,7 +29,7 @@ import BHProp as bh #Schwarzschild and Kerr BHs library
 #
 #          - 'ai'   : Primordial BH initial angular momentum a*                                                            # 
 #
-#          - 'bi'   : Primordial BH initial fraction beta^prie                                                             # 
+#          - 'bi'   : Primordial BH initial fraction beta^prime                                                            # 
 #
 #          - 'spin_DR' : Dark Radiation spin                                                                               #
 #
@@ -116,7 +116,7 @@ def FBEqs(a, v, Mi, rRin, ailog10, spinDR):
     return [x * log(10.) for x in dEqsda]
 
 #-------------------------------------------------------------------------------------------------------------------------------------#
-#                                                       Input parameters                                                              #
+#                                                          Main Class                                                                 #
 #-------------------------------------------------------------------------------------------------------------------------------------#
 
 class FBEqs_Sol:
@@ -125,7 +125,7 @@ class FBEqs_Sol:
     Friedmann - Boltzmann equation solver for Primordial Black Holes + SM radiation +  Dark Radiation. See arXiv.2207.xxxxx.
     We consider the collapse of density fluctuations as the PBH formation mechanism.
     This class returns the full evolution of the PBH, SM and DR comoving energy densities,
-    together with the evolution of the PBH mass and spin as function of the scale factor.
+    together with the evolution of the PBH mass and spin as function of the log_10 @ scale factor.
     '''
 
     def __init__(self, MPBHi, aPBHi, bPBHi, spinDR):

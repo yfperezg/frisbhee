@@ -58,7 +58,7 @@ print(sDR, sDRs)
 #------------------------------------------------------------------------------------------------------#
 #          We call the solver, and save the arrays containing the full evolution of the PBH,           #
 #    SM and DR comoving energy densities, together with the evolution of the PBH mass and spin         #
-#                                as function of the scale factor.                                      #
+#                              as function of the log_10 @ scale factor.                               #
 #------------------------------------------------------------------------------------------------------#
 
 Oh2m = FBEqs_Sol(Mi, asi, bi, sDR)
