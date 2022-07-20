@@ -33,7 +33,7 @@ from numpy import absolute, angle, array, savetxt
 
 import BHProp as bh # Schwarzschild and Kerr BHs library
 
-from SolFBEqs_PBH import FBEqs_Sol # Main Solver
+from SolFBEqs_DR import FBEqs_Sol # Main Solver
 
 #----------------------------------------#
 #           Main Parameters              #
