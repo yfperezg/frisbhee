@@ -69,7 +69,7 @@ a, t, MBH, ast, Rad, PBH, TUn, DRad  = Oh2m.Solt()
 solTab = array([a, t, ast, MBH, Rad, PBH, TUn, DRad])
 savetxt("./Data/DNeff/SolFBEqs_mono_"+sDRs+"_a*="+str(asi)+".txt",solTab.T)
 
-# Determining DNEff...
+# Determining DNeff...
 
 rDR_rRad = DRad[-1]/Rad[-1] # DR to SM energy densities ratio
 EV_EQ = (bh.gstar(TUn[-1])/bh.gstar(0.75e-9)) * (bh.gstarS(0.75e-9)/bh.gstarS(TUn[-1]))**(4./3.) # Conversion factor to matter-radiation
