@@ -1,7 +1,7 @@
 # FRISBHEE - FRIedmann Solver for Black Hole Evaporation in the Early universe
 
 ## Authors: Andrew Cheek, Lucien Heurtier, Yuber F. Perez-Gonzalez, Jessica Turner       
-### Based on: arXiv:2207.xxxxx
+### Based on: 2107.00013, arXiv:2107.00016, arXiv:2207.xxxxx
 
 This package provides the solution of the Friedmann - Boltzmann equations for Primordial Black Holes + SM radiation + Dark Radiation.
 We consider the collapse of density fluctuations as the PBH formation mechanism.
