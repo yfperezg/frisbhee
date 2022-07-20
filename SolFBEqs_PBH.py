@@ -122,7 +122,7 @@ def FBEqs(a, v, Mi, rRin, ailog10, spinDR):
 class FBEqs_Sol:
 
     ''' 
-    Friedmann - Boltzmann equation solver for Primordial Black Holes + SM radiation +  Dark Radiation. See arXiv.2207.xxxxx.
+    Friedmann - Boltzmann equation solver for Primordial Black Holes + SM radiation + Dark Radiation. See arXiv.2207.xxxxx.
     We consider the collapse of density fluctuations as the PBH formation mechanism.
     This class returns the full evolution of the PBH, SM and DR comoving energy densities,
     together with the evolution of the PBH mass and spin as function of the log_10 @ scale factor.
