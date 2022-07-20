@@ -5,7 +5,7 @@
 This package provides the solution of the Friedmann - Boltzmann equations for Primordial Black Holes + SM radiation + BSM Models.
 We consider the collapse of density fluctuations as the PBH formation mechanism.
 
-The main class in "SolFBEqs_PBH.py" returns the full evolution of the PBH, SM and Dark Radiation comoving energy densities,
+The main class in "SolFBEqs_DR.py" returns the full evolution of the PBH, SM and Dark Radiation comoving energy densities,
 together with the evolution of the PBH mass and spin as function of the $\log_{10}$ @ scale factor.
 
 The example script "DNeff.py" containts the final determination of DNeff depending on the model parameters.
