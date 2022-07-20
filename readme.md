@@ -2,7 +2,7 @@
 
 ## Authors: Andrew Cheek, Lucien Heurtier, Yuber F. Perez-Gonzalez, Jessica Turner       
 
-This package provides the solution of the Friedmann - Boltzmann equations for Primordial Black Holes + SM radiation + Dark Radiation.
+This package provides the solution of the Friedmann - Boltzmann equations for Primordial Black Holes + SM radiation + BSM Models.
 We consider the collapse of density fluctuations as the PBH formation mechanism.
 
 The main class in "SolFBEqs_PBH.py" returns the full evolution of the PBH, SM and DR comoving energy densities,
