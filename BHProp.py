@@ -38,7 +38,7 @@ ms   = 95e-3
 mc   = 1.275
 mb   = 4.18
 mt   = 173.1
-mg   = 0.6              # Ficticious gluon mass ---> indicates the QCD phase transition
+mg   = 0.6      # Ficticious gluon mass ---> indicates the QCD phase transition, following PRD41(1990)3052
 
 # Degrees of freedom of the SM ---> Before the EW phase transition
 
