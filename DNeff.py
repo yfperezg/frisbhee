@@ -124,4 +124,5 @@ ax[1,1].set_ylabel(r"$\rho_{\rm GRAV}/\rho_{\rm SM}$")
 ax[1,1].set_xlabel(r"$log(a)$")
 ax[1,1].set_yscale('log')
 
+plt.savefig("./Example_solution_DNeff.pdf")
 plt.show()
