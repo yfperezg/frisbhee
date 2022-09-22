@@ -8,15 +8,13 @@
 ###################################################################################################
 
 import numpy as np
-import pandas as pd
 from scipy import interpolate
 import scipy.integrate as integrate
 from scipy.integrate import quad, ode, solve_ivp, odeint
 from scipy.optimize import root
 from scipy.special import zeta, kn, spherical_jn, jv
 from scipy.interpolate import RectBivariateSpline
-import mpmath
-from mpmath import polylog
+
 
 from numpy import sqrt, log, exp, log10, pi, logspace, linspace, seterr, min, max, append
 from numpy import loadtxt, zeros, floor, ceil, unique, sort, cbrt, concatenate, delete, real
@@ -770,24 +768,24 @@ def afin(aexp, rPBHi, rRadi, t, ail):
     
     return [A + B + C - D*t]
 
-#-------------------------------------#
-#    g*(T) and g*S(T) interpolation   #
-#-------------------------------------#
+#-------------------------------------------------------------------------------------------------#
+#                                   g*(T) and g*S(T) interpolation                                #
+#-------------------------------------------------------------------------------------------------#
 
-gTab = pd.read_table("./Data/gstar.dat",  names=['T','gstar'])
+gTab = np.loadtxt("./Data/gstar.dat", skiprows=0)
 
-Ttab = gTab.iloc[:,0]
-gtab = gTab.iloc[:,1]
+Ttab = gTab[:,0]
+gtab = gTab[:,1]
 tck  = interpolate.splrep(Ttab, gtab, s=0)
 
 def gstar(T): return interpolate.splev(T, tck, der=0)
 
 def dgstardT(T): return interpolate.splev(T, tck, der = 1)
 
-gSTab = pd.read_table("./Data/gstarS.dat",  names=['T','gstarS'])
+gSTab = np.loadtxt("./Data/gstarS.dat", skiprows=0)
 
-TStab = gSTab.iloc[:,0]
-gstab = gSTab.iloc[:,1]
+TStab = gSTab[:,0]
+gstab = gSTab[:,1]
 tckS  = interpolate.splrep(TStab, gstab, s=0)
 
 def gstarS(T): return interpolate.splev(T, tckS, der = 0)
