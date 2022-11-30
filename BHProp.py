@@ -57,7 +57,7 @@ gv = gW + gZ + gp + gg + ggl  # Total number of SM vector dofs
 # Constants
 
 c     = 299792.458       # in km/s
-gamma = np.sqrt(3.)**-3. # Collapse factor
+gamma = sqrt(3.)**-3.    # Collapse factor
 GCF   = 6.70883e-39      # Gravitational constant in GeV^-2
 mPL   = GCF**-0.5        # Planck mass in GeV
 v     = 174              # Higgs vev
@@ -82,7 +82,7 @@ def TBH(M, astar):
 
     M_GeV = M/GeV_in_g
     
-    return (1./(4.*np.pi*GCF*M_GeV))*(np.sqrt(abs(1. - astar**2))/(1. + np.sqrt(abs(1. - astar**2)))) # M in g
+    return (1./(4.*pi*GCF*M_GeV))*(sqrt(abs(1. - astar**2))/(1. + sqrt(abs(1. - astar**2)))) # M in g
 
 #-------------------------------------------------------------------------------------------------------------------------------------#
 #                                                  Momentum Integrated Rate for Kerr BHs                                              #
@@ -120,13 +120,13 @@ def Gamma_S(M, ast, m):# Scalar, in GeV
 
             z = GM * m
 
-        In = hs * (1. - (1. + np.exp(-B * np.log10(abs(z)) - C))**(-nu)) # DM emission rate including greybody factors
+        In = hs * (1. - (1. + exp(-B * log10(abs(z)) - C))**(-nu)) # DM emission rate including greybody factors
         
     else:
         
         In = hs
     
-    return  (27/(1024. * np.pi**4 * GM)) * In
+    return  (27/(1024. * pi**4 * GM)) * In
 
 
 def Gamma_F(M, ast, m):# Fermion
@@ -158,13 +158,13 @@ def Gamma_F(M, ast, m):# Fermion
 
             z = GM * m
 
-        In = hf * (1. - (1. + np.exp(-B * np.log10(abs(z)) - C))**(-nu)) # DM emission rate including greybody factors
+        In = hf * (1. - (1. + exp(-B * log10(abs(z)) - C))**(-nu)) # DM emission rate including greybody factors
                         
     else:
         
         In = hf
     
-    return  2. * (27/(1024. * np.pi**4 * GM)) * In
+    return  2. * (27/(1024. * pi**4 * GM)) * In
 
 
 def Gamma_V(M, ast, m):# Vector
@@ -195,13 +195,13 @@ def Gamma_V(M, ast, m):# Vector
 
             z = GM * m
 
-        In = hv * (1. - (1. + np.exp(-B * np.log10(abs(z)) - C))**(-nu)) # DM emission rate including greybody factors
+        In = hv * (1. - (1. + exp(-B * log10(abs(z)) - C))**(-nu)) # DM emission rate including greybody factors
                                 
     else:
         
         In = hv
     
-    return  3. * (27/(1024. * np.pi**4 * GM)) * In
+    return  3. * (27/(1024. * pi**4 * GM)) * In
 
 def Gamma_G(M, ast, m):# Spin 2
 
@@ -231,13 +231,13 @@ def Gamma_G(M, ast, m):# Spin 2
 
             z = GM * m
 
-        In = hg * (1. - (1. + np.exp(-B * np.log10(abs(z)) - C))**(-nu)) # DM emission rate including greybody factors
+        In = hg * (1. - (1. + exp(-B * log10(abs(z)) - C))**(-nu)) # DM emission rate including greybody factors
                                         
     else:
         
         In = hg
     
-    return  5. * (27/(1024. * np.pi**4 * GM)) * In
+    return  5. * (27/(1024. * pi**4 * GM)) * In
 
 def Gamma_GO(M, ast, m):# Geometric optics limit
 
@@ -247,9 +247,22 @@ def Gamma_GO(M, ast, m):# Geometric optics limit
 
     zBH = m/TKBH
 
-    In = - zBH * polylog(2, -np.exp(-zBH)) - polylog(3, -np.exp(-zBH))# DM emission rate including greybody factors
+    In = - zBH * polylog(2, -exp(-zBH)) - polylog(3, -exp(-zBH))# DM emission rate including greybody factors
     
-    return  2. * (27/(1024. * np.pi**4 * GM)) * In
+    return  2. * (27/(1024. * pi**4 * GM)) * In
+
+def Gamma_DM(M, ast, mdm, s):
+
+    if s == 0.:
+        f = Gamma_S(M, ast, mdm)
+    elif s == 0.5:
+        f = Gamma_F(M, ast, mdm) # Assuming Majorana DM
+    elif s == 1.:
+        f = Gamma_V(M, ast, mdm)
+    elif s == 2.:
+        f = Gamma_G(M, ast, mdm)
+        
+    return f
 
 #-------------------------------------------------------------------------------------------------------------------------------------#
 #                                         Total f functions ---> related to the mass rate, dM/dt                                      #
@@ -307,7 +320,7 @@ def phi_s(M, ast, m):
 
             z = GM * m
 
-        In = f0 * (1. - (1. + np.exp(-B * np.log10(abs(z)) - C))**(-nu))   
+        In = f0 * (1. - (1. + exp(-B * log10(abs(z)) - C))**(-nu))   
         
     else:
         
@@ -345,7 +358,7 @@ def phi_f(M, ast, m):
 
             z = GM * m
 
-        In = f12 * (1. - (1. + np.exp(-B * np.log10(abs(z)) - C))**(-nu))
+        In = f12 * (1. - (1. + exp(-B * log10(abs(z)) - C))**(-nu))
         
     else:
         
@@ -383,7 +396,7 @@ def phi_v(M, ast, m):
 
             z = GM * m
 
-        In = f1 * (1. - (1. + np.exp(-B * np.log10(abs(z)) - C))**(-nu))
+        In = f1 * (1. - (1. + exp(-B * log10(abs(z)) - C))**(-nu))
         
     else:
         
@@ -421,7 +434,7 @@ def phi_g(M, ast, m):
 
             z = GM * m
 
-        In = f2 * (1. - (1. + np.exp(-B * np.log10(abs(z)) - C))**(-nu))
+        In = f2 * (1. - (1. + exp(-B * log10(abs(z)) - C))**(-nu))
         
     else:
         
@@ -460,7 +473,19 @@ def fRH(M, ast, mrh): return gnu * phi_f(M, ast, mrh)
 
 # DM contribution
 
-def fDM(M, ast, mdm): return gnu * phi_f(M, ast, mdm)
+def fDM(M, ast, mdm, s):
+    
+    if s == 0.:
+        f = phi_s(M, ast, mdm)
+    elif s == 0.5:
+        f = 2.*phi_f(M, ast, mdm) # Assuming Majorana DM
+    elif s == 1.:
+        f = 3.*phi_v(M, ast, mdm)
+    elif s == 2.:
+        f = 5.*phi_g(M, ast, mdm)
+        
+    return f
+
 def fX(M, ast, mX):   return 3. * phi_v(M, ast, mX)
 
 # Dark Radiation
@@ -519,7 +544,7 @@ def gam_s(M, ast, m):
         C  = b0 + b1*ast + b2*ast**2 + b3*ast**3 + b4*ast**4 + (b5*ast**2)/(ast-1.025)**2
         nu = 10.**(c0 + c1*ast + c2*ast**2 + c3*ast**3 + c4*ast**4 + (c5*ast**2)/(ast-1.025)**2)
 
-        In = g0 * (1. - (1. + np.exp(-B * np.log10(abs(z)) - C))**(-nu))
+        In = g0 * (1. - (1. + exp(-B * log10(abs(z)) - C))**(-nu))
         
     else:
         
@@ -547,7 +572,7 @@ def gam_f(M, ast, m):
         C  = b0 + b1*ast + b2*ast**2 + b3*ast**3 + b4*ast**4 + (b5*ast**2)/(ast-1.025)**2
         nu = 10.**(c0 + c1*ast + c2*ast**2 + c3*ast**3 + c4*ast**4 + (c5*ast**2)/(ast-1.025)**2)
 
-        In = g12 * (1. - (1. + np.exp(-B * np.log10(abs(z)) - C))**(-nu))        
+        In = g12 * (1. - (1. + exp(-B * log10(abs(z)) - C))**(-nu))        
                 
     else:
         
@@ -575,7 +600,7 @@ def gam_v(M, ast, m):
         C  = b0 + b1*ast + b2*ast**2 + b3*ast**3 + b4*ast**4 + (b5*ast**2)/(ast-1.025)**2
         nu = 10.**(c0 + c1*ast + c2*ast**2 + c3*ast**3 + c4*ast**4 + (c5*ast**2)/(ast-1.025)**2)
 
-        In = g1 * (1. - (1. + np.exp(-B * np.log10(abs(z)) - C))**(-nu))
+        In = g1 * (1. - (1. + exp(-B * log10(abs(z)) - C))**(-nu))
                         
     else:
         
@@ -603,7 +628,7 @@ def gam_g(M, ast, m):
         C  = b0 + b1*ast + b2*ast**2 + b3*ast**3 + b4*ast**4 + (b5*ast**2)/(ast-1.025)**2
         nu = 10.**(c0 + c1*ast + c2*ast**2 + c3*ast**3 + c4*ast**4 + (c5*ast**2)/(ast-1.025)**2)
 
-        In = g2 * (1. - (1. + np.exp(-B * np.log10(abs(z)) - C))**(-nu))
+        In = g2 * (1. - (1. + exp(-B * log10(abs(z)) - C))**(-nu))
                                 
     else:
         In = g2
@@ -637,9 +662,22 @@ def gSM(M, ast):
 
 def gRH(M, ast, mRH): return gnu * gam_f(M, ast, mRH)
 
-# Mediator contribution
+# Dark Matter contribution
 
-def gDM(M, ast, mdm): return gnu * gam_f(M, ast, mdm)
+def gDM(M, ast, mdm, s):
+
+    if s == 0.:
+        f = gam_s(M, ast, mdm)
+    elif s == 0.5:
+        f = 2.*gam_f(M, ast, mdm) # Assuming Majorana DM
+    elif s == 1.:
+        f = 3.*gam_v(M, ast, mdm)
+    elif s == 2.:
+        f = 5.*gam_g(M, ast, mdm)
+        
+    return f
+
+# Mediator contribution
 
 def gX(M, ast, mX): return 3. * gam_v(M, ast, mX)
 
@@ -658,9 +696,9 @@ def gDR(M, ast, s):
         
     return f
 
-#-----------------------------------------------------------------------------#
-#                               PBHs lifetime                                 #
-#-----------------------------------------------------------------------------#
+#---------------------------------------------------------------------------------------------------------------------------------------#
+#                                                                 PBHs lifetime                                                         #
+#---------------------------------------------------------------------------------------------------------------------------------------#
 
 def ItauSM(tl, v): # Standard Model + Gravitons
     
@@ -670,26 +708,26 @@ def ItauSM(tl, v): # Standard Model + Gravitons
     FSM = fSM(M, ast) + gg * phi_g(M, ast, 0.)  # 
     GSM = gSM(M, ast) + gg * gam_g(M, ast, 0.)  #
 
-    dMdtl   = - np.log(10.) * 10.**tl * kappa * FSM * M**-2
-    dastdtl = - np.log(10.) * 10.**tl * ast * kappa * M**-3 * (GSM - 2.*FSM)
+    dMdtl   = - log(10.) * 10.**tl * kappa * FSM * M**-2
+    dastdtl = - log(10.) * 10.**tl * ast * kappa * M**-3 * (GSM - 2.*FSM)
 
     return [dMdtl, dastdtl]
 
-def ItauFO(tl, v, mDM): # Freeze Out case
+def ItauFO(tl, v, mDM, sDM): # Freeze Out case
     
     M   = v[0]
     ast = v[1]
 
-    FSM = fSM(M, ast)
-    FDM = fDM(M, ast, mDM) # DM evaporation contribution
-    FT  = FSM + FDM        # Total Evaporation contribution
+    FSM = fSM(M, ast) + gg * phi_g(M, ast, 0.)  # Standard Model + Gravitons
+    FDM = fDM(M, ast, mDM, sDM)                 # DM evaporation contribution
+    FT  = FSM + FDM                             # Total Evaporation contribution
 
-    GSM = gSM(M, ast)
-    GDM = gDM(M, ast, mDM) # DM evaporation contribution
-    GT  = GSM + GDM        # Total Evaporation contribution
+    GSM = gSM(M, ast) + gg * gam_g(M, ast, 0.)  # Standard Model + Gravitons
+    GDM = gDM(M, ast, mDM, sDM)                 # DM evaporation contribution
+    GT  = GSM + GDM                             # Total Evaporation contribution
 
-    dMdtl   = - np.log(10.) * 10.**tl * kappa * FT * M**-2
-    dastdtl = - np.log(10.) * 10.**tl * ast * kappa * M**-3 * (GT - 2.*FT)
+    dMdtl   = - log(10.) * 10.**tl * kappa * FT * M**-2
+    dastdtl = - log(10.) * 10.**tl * ast * kappa * M**-3 * (GT - 2.*FT)
 
     return [dMdtl, dastdtl]
 
@@ -706,28 +744,28 @@ def ItauDR(tl, v, s): # Dark Radiation Case
     GDR = gDR(M, ast, s) # DM evaporation contribution
     GT  = GSM + GDR      # Total Evaporation contribution
 
-    dMdtl   = - np.log(10.) * 10.**tl * kappa * FT * M**-2
-    dastdtl = - np.log(10.) * 10.**tl * ast * kappa * M**-3 * (GT - 2.*FT)
+    dMdtl   = - log(10.) * 10.**tl * kappa * FT * M**-2
+    dastdtl = - log(10.) * 10.**tl * ast * kappa * M**-3 * (GT - 2.*FT)
 
     return [dMdtl, dastdtl]
 
-def ItauFI(tl, v, mDM, mX): # Freeze In case (Including mediator)
+def ItauFI(tl, v, mDM, sDM, mX): # Freeze In case (Including mediator)
     
     M   = v[0]
     ast = v[1]
 
-    FSM = fSM(M, ast)
-    FDM = fDM(M, ast, mDM) # DM evaporation contribution
-    FX  = fX(M, ast, mX)   # Mediator contribution
-    FT  = FSM + FDM + FX   # Total Evaporation contribution
+    FSM = fSM(M, ast) + gg * phi_g(M, ast, 0.)  # Standard Model + Gravitons
+    FDM = fDM(M, ast, mDM, sDM) # DM evaporation contribution
+    FX  = fX(M, ast, mX)        # Mediator contribution
+    FT  = FSM + FDM + FX        # Total Evaporation contribution
 
-    GSM = gSM(M, ast)
-    GDM = gDM(M, ast, mDM) # DM evaporation contribution
-    GX  = gX(M, ast, mX)  # Mediator contribution
-    GT  = GSM + GDM + GX   # Total Evaporation contribution
+    GSM = gSM(M, ast) + gg * gam_g(M, ast, 0.)  # Standard Model + Gravitons
+    GDM = gDM(M, ast, mDM, sDM) # DM evaporation contribution
+    GX  = gX(M, ast, mX)        # Mediator contribution
+    GT  = GSM + GDM + GX        # Total Evaporation contribution
 
-    dMdtl   = - np.log(10.) * 10.**tl * kappa * FT * M**-2
-    dastdtl = - np.log(10.) * 10.**tl * ast * kappa * M**-3 * (GT - 2.*FT)
+    dMdtl   = - log(10.) * 10.**tl * kappa * FT * M**-2
+    dastdtl = - log(10.) * 10.**tl * ast * kappa * M**-3 * (GT - 2.*FT)
 
     return [dMdtl, dastdtl]
 
@@ -736,20 +774,20 @@ def ItauRH(tl, v, M1, M2, M3): # Including 3 RH neutrinos
     M   = v[0]
     ast = v[1]
 
-    FSM  = fSM(M, ast)
-    FRH1 = fRH(M, ast, M1)           # 1 RH neutrino evaporation contribution
-    FRH2 = fRH(M, ast, M2)           # 2 RH neutrino evaporation contribution
-    FRH3 = fRH(M, ast, M3)           # 3 RH neutrino evaporation contribution
-    FT   = FSM + FRH1 + FRH2 + FRH3  # Total Evaporation contribution
+    FSM  = fSM(M, ast) + gg * phi_g(M, ast, 0.)  # Standard Model + Gravitons
+    FRH1 = fRH(M, ast, M1)                       # 1 RH neutrino evaporation contribution
+    FRH2 = fRH(M, ast, M2)                       # 2 RH neutrino evaporation contribution
+    FRH3 = fRH(M, ast, M3)                       # 3 RH neutrino evaporation contribution
+    FT   = FSM + FRH1 + FRH2 + FRH3              # Total Evaporation contribution
 
-    GSM  = gSM(M, ast)
-    GRH1 = gRH(M, ast, M1)           # 1 RH neutrino evaporation contribution
-    GRH2 = gRH(M, ast, M2)           # 2 RH neutrino evaporation contribution
-    GRH3 = gRH(M, ast, M3)           # 3 RH neutrino evaporation contribution
-    GT   = GSM + GRH1 + GRH2 + GRH3  # Total Evaporation contribution
+    GSM  = gSM(M, ast) + gg * gam_g(M, ast, 0.)  # Standard Model + Gravitons
+    GRH1 = gRH(M, ast, M1)                       # 1 RH neutrino evaporation contribution
+    GRH2 = gRH(M, ast, M2)                       # 2 RH neutrino evaporation contribution
+    GRH3 = gRH(M, ast, M3)                       # 3 RH neutrino evaporation contribution
+    GT   = GSM + GRH1 + GRH2 + GRH3              # Total Evaporation contribution
 
-    dMdtl   = - np.log(10.) * 10.**tl * kappa * FT * M**-2
-    dastdtl = - np.log(10.) * 10.**tl * ast * kappa * M**-3 * (GT - 2.*FT)
+    dMdtl   = - log(10.) * 10.**tl * kappa * FT * M**-2
+    dastdtl = - log(10.) * 10.**tl * ast * kappa * M**-3 * (GT - 2.*FT)
 
     return [dMdtl, dastdtl]
 
@@ -761,10 +799,10 @@ def afin(aexp, rPBHi, rRadi, t, ail):
 
     ain = 10.**ail # Initial scale factor
     
-    A = -ain * rPBHi * np.sqrt(GCF * (ain * rPBHi + rRadi))
-    B = a[0] * rPBHi * np.sqrt(GCF * (a[0] * rPBHi + rRadi))
-    C = 2. * rRadi * (np.sqrt(GCF*(ain * rPBHi + rRadi)) - np.sqrt(GCF*(a[0]*rPBHi + rRadi)))
-    D = GCF * np.sqrt(6.*np.pi) * rPBHi**2
+    A = -ain * rPBHi * sqrt(GCF * (ain * rPBHi + rRadi))
+    B = a[0] * rPBHi * sqrt(GCF * (a[0] * rPBHi + rRadi))
+    C = 2. * rRadi * (sqrt(GCF*(ain * rPBHi + rRadi)) - sqrt(GCF*(a[0]*rPBHi + rRadi)))
+    D = GCF * sqrt(6.*pi) * rPBHi**2
     
     return [A + B + C - D*t]
 
@@ -772,7 +810,7 @@ def afin(aexp, rPBHi, rRadi, t, ail):
 #                                   g*(T) and g*S(T) interpolation                                #
 #-------------------------------------------------------------------------------------------------#
 
-gTab = np.loadtxt("./Data/gstar.dat", skiprows=0)
+gTab = loadtxt("./Data/gstar.dat", skiprows=0)
 
 Ttab = gTab[:,0]
 gtab = gTab[:,1]
@@ -782,7 +820,7 @@ def gstar(T): return interpolate.splev(T, tck, der=0)
 
 def dgstardT(T): return interpolate.splev(T, tck, der = 1)
 
-gSTab = np.loadtxt("./Data/gstarS.dat", skiprows=0)
+gSTab = loadtxt("./Data/gstarS.dat", skiprows=0)
 
 TStab = gSTab[:,0]
 gstab = gSTab[:,1]

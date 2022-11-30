@@ -38,6 +38,8 @@ olderr = np.seterr(all='ignore')
 #
 #          - 'mDM'  : DM Mass in GeV
 #
+#          - 'sDM'  : DM spin -> [0.0, 0.5, 1.0, 2.0]
+#
 #          - 'g_DM' : DM degrees of freedom
 #
 #-----------------------------------------------------------------
@@ -46,7 +48,7 @@ olderr = np.seterr(all='ignore')
 #
 #      If using this code, please cite:
 #
-#      - Arxiv:2107.xxxxx    and    Arxiv:2107.xxxxx
+#      - Arxiv:2107.00013    and    Arxiv:2107.00016
 #
 #      - JCAP 12 (2017) 013 • e-Print: 1706.03118 (WDM constraints)
 #
@@ -75,7 +77,7 @@ def PlanckMass_B(t, v, Mi):
 #########################################################
 #           Average DM and Mediator Momentum
 #########################################################
-def p_average_DM(Mi, asi, MDM, tau, Sol_t):
+def p_average_DM(Mi, asi, MDM, sDM, tau, Sol_t):
 
     def Integ_p(t, pars):
 
@@ -84,7 +86,7 @@ def p_average_DM(Mi, asi, MDM, tau, Sol_t):
         M = sol(t)[0]
         a = sol(t)[1]
 
-        return 10.**t * log(10.) * bh.fDM(M, a, MDM)/M**2
+        return 10.**t * log(10.) * bh.fDM(M, a, MDM, sDM)/M**2
 
     def Integ_n(t, pars):
 
@@ -93,7 +95,7 @@ def p_average_DM(Mi, asi, MDM, tau, Sol_t):
         M = sol(t)[0]
         a = sol(t)[1]
 
-        return 10.**t * log(10.) * bh.Gamma_F(M, a, MDM)
+        return 10.**t * log(10.) * bh.Gamma_DM(M, a, MDM, sDM)
 
     pars = [MDM, Sol_t]
 
@@ -111,7 +113,7 @@ def p_average_DM(Mi, asi, MDM, tau, Sol_t):
 #   Equations before evaporation   #
 #----------------------------------#
 
-def FBEqs(a, v, nphi, mDM, Mi, ailog10):
+def FBEqs(a, v, nphi, mDM, sDM, Mi, ailog10):
 
     Mt    = v[0] # PBH mass
     ast   = v[1] # PBH ang mom
@@ -128,13 +130,13 @@ def FBEqs(a, v, nphi, mDM, Mi, ailog10):
     #   Parameters   #
     #----------------#
     
-    FSM = bh.fSM(M, ast)      # SM contribution
-    FDM = bh.fDM(M, ast, mDM) # DM contribution
-    FT  = FSM + FDM           # Total Energy contribution
+    FSM = bh.fSM(M, ast)           # SM contribution
+    FDM = bh.fDM(M, ast, mDM, sDM) # DM contribution
+    FT  = FSM + FDM                # Total Energy contribution
 
-    GSM = bh.gSM(M, ast)      # SM contribution
-    GDM = bh.gDM(M, ast, mDM) # DM contribution
-    GT  = GSM + GDM           # Total Angular Momentum contribution
+    GSM = bh.gSM(M, ast)           # SM contribution
+    GDM = bh.gDM(M, ast, mDM, sDM) # DM contribution
+    GT  = GSM + GDM                # Total Angular Momentum contribution
     
     H   = np.sqrt(8 * pi * bh.GCF * (rPBH * 10.**(-3*(a + ailog10)) + rRAD * 10.**(-4*(a + ailog10)))/3.) # Hubble parameter
     Del = 1. + Tp * bh.dgstarSdT(Tp)/(3. * bh.gstarS(Tp)) # Temperature parameter
@@ -159,7 +161,7 @@ def FBEqs(a, v, nphi, mDM, Mi, ailog10):
     #           Dark Matter Equations         #
     #-----------------------------------------#
     
-    dNDMHda = (bh.Gamma_F(M, ast, mDM)/H)*(rPBH/(M/bh.GeV_in_g))/nphi # PBH-induced contribution w/o contact
+    dNDMHda = (bh.Gamma_DM(M, ast, mDM, sDM)/H)*(rPBH/(M/bh.GeV_in_g))/nphi # PBH-induced contribution w/o contact
     
     ##########################################################    
     
@@ -171,7 +173,7 @@ def FBEqs(a, v, nphi, mDM, Mi, ailog10):
 #    Equations after evaporation   #
 #----------------------------------#
 
-def FBEqs_aBE(a, v, nphi, mDM, a_evap, T_bh_in, p_DM):
+def FBEqs_aBE(a, v, nphi, mDM, sDM, a_evap, T_bh_in, p_DM):
 
     rRAD = v[0] # Radiation energy density
     Tp   = v[1] # Temperature
@@ -214,12 +216,13 @@ def FBEqs_aBE(a, v, nphi, mDM, a_evap, T_bh_in, p_DM):
 #------------------------------------------------------------------------------------------------------------------#
 class FrInPBH:
 
-    def __init__(self, MPBHi, aPBHi, bPBHi, mDM, g_DM):
+    def __init__(self, MPBHi, aPBHi, bPBHi, mDM, sDM, g_DM):
 
         self.MPBHi  = MPBHi # Log10[M/1g]
         self.aPBHi  = aPBHi # a_star
         self.bPBHi  = bPBHi # Log10[beta']
         self.mDM    = mDM
+        self.sDM    = sDM
         self.g_DM   = g_DM
     
 #-------------------------------------------------------------------------------------------------------------------------------------#
@@ -241,10 +244,11 @@ class FrInPBH:
         TBHi   = bh.TBH(Mi, asi)  # Initial BH temperature
         
         mDM     = 10**self.mDM    # DM mass in GeV
+        sDM     = self.sDM
         mX      = 3*10**self.mDM  # Mediator Mass
         g_DM    = self.g_DM       # DM d.o.f.
 
-        paramsDM=[mDM, mX, g_DM] 
+        paramsDM=[mDM, sDM, mX, g_DM] 
     
         #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++#
         #                                           Solving the equations                                                   #
@@ -275,7 +279,7 @@ class FrInPBH:
             MPL_A.terminal  = True
             MPL_A.direction = -1.
             
-            tau_sol = solve_ivp(fun=lambda t, y: bh.ItauFO(t, y, mDM), t_span = [-80, 40.], y0 = [Mi, asi], 
+            tau_sol = solve_ivp(fun=lambda t, y: bh.ItauFO(t, y, mDM, sDM), t_span = [-80, 40.], y0 = [Mi, asi], 
                                  events=MPL_A, rtol=1.e-5, atol=1.e-20, dense_output=True)
             
             if i == 0:
@@ -302,8 +306,8 @@ class FrInPBH:
             v0 = [0., asi, rRadi, rPBHi, Ti, NDMHi]
             
             # solving ODE
-            solFBE = solve_ivp(lambda t, z: FBEqs(t, z, nphi, mDM, Mi, ailog10),
-                               [0., 1.05*abs(aflog10)], v0, method='BDF', events=MPL_B, rtol=1.e-5, atol=1.e-20)
+            solFBE = solve_ivp(lambda t, z: FBEqs(t, z, nphi, mDM, sDM, Mi, ailog10),
+                               [0., 1.05*abs(aflog10)], v0, method='BDF', events=MPL_B, rtol=1.e-7, atol=1.e-15)
 
             if solFBE.t[-1] < 0.:
                 print(solFBE)
@@ -347,7 +351,7 @@ class FrInPBH:
         #      Average momentum     #
         #+++++++++++++++++++++++++++#
 
-        p_DM = p_average_DM(Min, asin, mDM, tau, Sol_t)
+        p_DM = p_average_DM(Min, asin, mDM, sDM, tau, Sol_t)
         
         #-----------------------------------------#
         #           After BH evaporation          #
@@ -361,8 +365,8 @@ class FrInPBH:
         v0aBE = [RadBE[-1], TBE[-1], NDMHBE[-1]]
         
         # solve ODE        
-        solFBE_aBE = solve_ivp(lambda t, z: FBEqs_aBE(t, z, nphi, mDM, aflog10, bh.TBH(MBHBE[-1], astBE[-1]), p_DM),
-                               [aflog10, afmax], v0aBE, method='Radau', rtol=1.e-7, atol=1.e-20)
+        solFBE_aBE = solve_ivp(lambda t, z: FBEqs_aBE(t, z, nphi, mDM, sDM, aflog10, bh.TBH(MBHBE[-1], astBE[-1]), p_DM),
+                               [aflog10, afmax], v0aBE, method='BDF', rtol=1.e-5, atol=1.e-15)
 
         npaf = solFBE_aBE.t.shape[0]
 

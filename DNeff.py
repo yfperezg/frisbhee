@@ -4,7 +4,7 @@
 #                            Determination of DNeff for Dark Radiation                            #
 #                                                                                                 #
 #         Authors: Andrew Cheek, Lucien Heurtier, Yuber F. Perez-Gonzalez, Jessica Turner         #
-#                                   Based on: arXiv:2207.xxxxx                                    #
+#                                   Based on: arXiv:2207.09462                                    #
 #                                                                                                 #
 ###################################################################################################
 

@@ -4,7 +4,7 @@
 #                                     Evaporation + Freeze-In                                     #
 #                                                                                                 #
 #         Authors: Andrew Cheek, Lucien Heurtier, Yuber F. Perez-Gonzalez, Jessica Turner         #
-#                    Based on: arXiv:2107.xxxxx (P1) and  arXiv:2107.xxxxx (P2)                   #
+#                    Based on: arXiv:2107.00013 (P1) and  arXiv:2107.00016 (P2)                   #
 #                                                                                                 #
 ###################################################################################################
 
@@ -254,7 +254,9 @@ def p_average_DM(Mi, asi, MDM, tau, Sol_t):
         M = sol(t)[0]
         a = sol(t)[1]
 
-        return 10.**t * log(10.) * bh.fDM(M, a, MDM)/M**2
+        sDM = 0.5 # Dark Matter spin
+
+        return 10.**t * log(10.) * bh.fDM(M, a, MDM, sDM)/M**2
 
     def Integ_n(t, pars):
 
@@ -263,7 +265,9 @@ def p_average_DM(Mi, asi, MDM, tau, Sol_t):
         M = sol(t)[0]
         a = sol(t)[1]
 
-        return 10.**t * log(10.) * bh.Gamma_F(M, a, MDM)
+        sDM = 0.5 # Dark Matter spin
+
+        return 10.**t * log(10.) * bh.Gamma_DM(M, a, MDM, sDM)
 
     pars = [MDM, Sol_t]
 
@@ -400,16 +404,18 @@ def FBEqs(a, v, nphi, paramsDM, GammaX, p_DM, p_X, Br_DM, FO):
     #----------------#
     
     mDM, mf, mX, gV, gD, g_DM, model = paramsDM
-    
-    FSM = bh.fSM(M, ast)      # SM contribution
-    FDM = bh.fDM(M, ast, mDM) # DM contribution
-    FX  = bh.fX(M, ast, mX)   # Mediator contribution
-    FT  = FSM + FDM + FX      # Total Energy contribution
 
-    GSM = bh.gSM(M, ast)      # SM contribution
-    GDM = bh.gDM(M, ast, mDM) # DM contribution
-    GX  = bh.gX(M, ast, mDM)  # Mediator contribution
-    GT  = GSM + GDM + GX      # Total Angular Momentum contribution
+    sDM = 0.5 # Dark Matter spin  -> Assumed here to be fermionic DM
+    
+    FSM = bh.fSM(M, ast)           # SM contribution
+    FDM = bh.fDM(M, ast, mDM, sDM) # DM contribution
+    FX  = bh.fX(M, ast, mX)        # Mediator contribution
+    FT  = FSM + FDM + FX           # Total Energy contribution
+
+    GSM = bh.gSM(M, ast)           # SM contribution
+    GDM = bh.gDM(M, ast, mDM, sDM) # DM contribution
+    GX  = bh.gX(M, ast, mX)        # Mediator contribution
+    GT  = GSM + GDM + GX           # Total Angular Momentum contribution
     
     H   = np.sqrt(8 * pi * bh.GCF * (rPBH * 10.**(-3*a) + rRAD * 10.**(-4*a))/3.) # Hubble parameter
     Del = 1. + Tp * bh.dgstarSdT(Tp)/(3. * bh.gstarS(Tp)) # Temperature parameter
@@ -454,7 +460,7 @@ def FBEqs(a, v, nphi, paramsDM, GammaX, p_DM, p_X, Br_DM, FO):
     
     dNDMTda = -(NDMT**2 - NDMeq**2)*svTT*nphi/(H*10.**(3.*a))
         
-    dNDMBda = 2.*(Br_DM*GXt/H)*NX + (bh.Gamma_F(M, ast, mDM)/H)*(rPBH/(M/bh.GeV_in_g))/nphi
+    dNDMBda = 2.*(Br_DM*GXt/H)*NX + (bh.Gamma_DM(M, ast, mDM, sDM)/H)*(rPBH/(M/bh.GeV_in_g))/nphi
 
     dNXda  = -NX*GXt/H + (bh.Gamma_V(M, ast, mX)/H)*(rPBH/(M/bh.GeV_in_g))/nphi
 
@@ -592,11 +598,13 @@ class FrInPBH:
         model   = self.model      # DM Model
                 
         # Derive fraction evaporated
+
+        sDM = 0.5 # Dark Matter spin -> Assumed here to be fermionic
         
-        FSM_test = bh.fSM(Mi, asi)      # SM contribution
-        FDM_test = bh.fDM(Mi, asi, mDM) # DM contribution
-        FX_test  = bh.fX(Mi, asi, mX)   # Mediator contribution
-        FT_test  = FSM_test + FDM_test + FX_test      # Total Energy contribution
+        FSM_test = bh.fSM(Mi, asi)                # SM contribution
+        FDM_test = bh.fDM(Mi, asi, mDM, sDM)      # DM contribution
+        FX_test  = bh.fX(Mi, asi, mX)             # Mediator contribution
+        FT_test  = FSM_test + FDM_test + FX_test  # Total Energy contribution
         
         frac_SM=FSM_test/(FT_test)
         print('fraction evaporated into SM = ',frac_SM*100., ' %')
@@ -636,7 +644,7 @@ class FrInPBH:
         MPL.terminal  = True
         MPL.direction = -1.
 
-        tau_sol = solve_ivp(fun=lambda t, y: bh.ItauFI(t, y, mDM, mX), t_span = [-10., 40.], y0 = [Mi, asi], 
+        tau_sol = solve_ivp(fun=lambda t, y: bh.ItauFI(t, y, mDM, sDM, mX), t_span = [-10., 40.], y0 = [Mi, asi], 
                             events=MPL, rtol=1.e-10, atol=1.e-20, dense_output=True)
 
         Sol_t = tau_sol.sol # Solutions for obtaining <p>
@@ -665,8 +673,7 @@ class FrInPBH:
         FO = [Ti, 0., 0., 0., 0., 0., 0., 0., 10.] # Temp, a,  <sv's> at DM decoupling, neq, nDM_BH, H
 
         # solve ODE
-        solFBE = solve_ivp(lambda t, z: FBEqs(t, z, nphi, paramsDM,
-                                              G_X, p_DM, p_X, BR, FO),
+        solFBE = solve_ivp(lambda t, z: FBEqs(t, z, nphi, paramsDM, G_X, p_DM, p_X, BR, FO),
                            [0., 1.25*aflog10], v0, method='BDF', events=MPL, rtol=1.e-6, atol=1.e-10)
 
         aflog10 = solFBE.t[-1] # We update the value of log(a) at which PBHs evaporate
@@ -684,8 +691,8 @@ class FrInPBH:
         v0aBE = [solFBE.y[2,-1], solFBE.y[4,-1], solFBE.y[5,-1], solFBE.y[6,-1], solFBE.y[7,-1], solFBE.y[8,-1], solFBE.y[9,-1]]
         
         # solve ODE        
-        solFBE_aBE = solve_ivp(lambda t, z: FBEqs_aBE(t, z, nphi, paramsDM,
-                                                      G_X, aflog10, bh.TBH(solFBE.y[0,-1],solFBE.y[1,-1]), p_DM, p_X, BR, FO),
+        solFBE_aBE = solve_ivp(lambda t, z: FBEqs_aBE(t, z, nphi, paramsDM, G_X, aflog10, bh.TBH(solFBE.y[0,-1],solFBE.y[1,-1]),
+                                                      p_DM, p_X, BR, FO),
                                [aflog10, afmax], v0aBE, method='Radau', rtol=1.e-7, atol=1.e-10)
 
         npaf = solFBE_aBE.t.shape[0]
@@ -810,11 +817,13 @@ class FrInPBH:
         
         
         # Derive fraction evaporated
+
+        sDM = 0.5 # Dark Matter spin  ->  Assumed here to be fermionic
         
-        FSM_test = bh.fSM(Mi, asi)      # SM contribution
-        FDM_test = bh.fDM(Mi, asi, mDM) # DM contribution
-        FX_test  = bh.fX(Mi, asi, mX)   # Mediator contribution
-        FT_test  = FSM_test + FDM_test + FX_test      # Total Energy contribution
+        FSM_test = bh.fSM(Mi, asi)                 # SM contribution
+        FDM_test = bh.fDM(Mi, asi, mDM, sDM)       # DM contribution
+        FX_test  = bh.fX(Mi, asi, mX)              # Mediator contribution
+        FT_test  = FSM_test + FDM_test + FX_test   # Total Energy contribution
         
         frac_SM=FSM_test/(FT_test)
         

@@ -4,7 +4,7 @@
 #                            Purely Gravitational Interacting Dark Matter.                        #
 #                                                                                                 #
 #         Authors: Andrew Cheek, Lucien Heurtier, Yuber F. Perez-Gonzalez, Jessica Turner         #
-#                                   Based on: arXiv:2107.xxxxx                                    #
+#                                   Based on: arXiv:2107.00013                                    #
 #                                                                                                 #
 ###################################################################################################
 
@@ -34,11 +34,12 @@ from Omega_h2_onlyDM import FrInPBH
 
 Mi   = 2.      # Log10@ Initial BH mass in grams
 ai   = 0.      # Initial a* value, a* = 0. -> Schwarzschild, a* > 0. -> Kerr.
-bi   = -17.5  # Log10@beta^\prime 
+bi   = -17.5   # Log10@beta^\prime 
 mDM  = 7.      # Log10 @ DM Mass in GeV
+sDM  = 0.5     # Dark Matter spin
 g_DM = 2       # DM degrees of freedom
 
-Oh2 = FrInPBH(Mi, ai, bi, mDM, g_DM) # Omega * h^2
+Oh2 = FrInPBH(Mi, ai, bi, mDM, sDM, g_DM) # Omega * h^2
 
 Z = Oh2.Omegah2()
 
