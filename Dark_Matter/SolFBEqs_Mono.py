@@ -4,7 +4,7 @@
 #                                    Only DM from evaporation                                     #
 #                                                                                                 #
 #         Authors: Andrew Cheek, Lucien Heurtier, Yuber F. Perez-Gonzalez, Jessica Turner         #
-#                    Based on: arXiv:2107.xxxxx (P1) and  arXiv:2107.xxxxx (P2)                   #
+#                    Based on: arXiv:2107.00013 (P1) and  arXiv:2107.00016 (P2)                   #
 #                                                                                                 #
 ###################################################################################################
 
@@ -338,3 +338,30 @@ class FBEqs_Sol:
         NDMH = np.concatenate((NDMHBE, solFBE_aBE.y[3,:]), axis=None)
                 
         return [x, t, MBH, ast, Rad, PBH, T, NDMH, Tev]
+
+    #------------------------------------------------------------#
+    #                                                            #
+    #                     Conversion to Oh^2                     #
+    #                                                            #
+    #------------------------------------------------------------#
+    
+    def Omega_h2(self):
+        '''
+        This function directly returns Omega_h2, using the solution above
+        '''
+
+        x, t, MBH, ast, Rad, PBH, TUn, NDMH, Tev = self.Solt()
+        
+        nphi = (2.*zeta(3)/np.pi**2)*TUn[0]**3             # Initial photon number density
+        
+        rc = 1.053672e-5*bh.cm_in_invkeV**-3*1.e-18   # Critical density in GeV^3
+        
+        T0 = 2.34865e-13  # Temperature today in GeV
+        
+        Oh2  = NDMH[-1] * nphi * 10.**(-3.*x[-1]) * 10.**self.mDM * (bh.gstarS(T0)/bh.gstarS(TUn[-1]))*(T0/TUn[-1])**3*(1/rc)
+
+        return Oh2
+        
+        
+
+        

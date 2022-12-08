@@ -624,3 +624,24 @@ class FBEqs_Sol:
         DRad = solFBE.y[3,:]
         
         return [x, t, Rad, PBH, TUn, DRad]
+
+    #------------------------------------------------------------#
+    #                                                            #
+    #                     Determining DNeff                      #
+    #                                                            #
+    #------------------------------------------------------------#
+    
+    def DNeff(self):
+        '''
+        This function directly returns DNeff, using the solution above
+        '''
+
+        x, t, Rad, PBH, TUn, DRad = self.Solt()
+        
+        rDR_rRad = (DRad[-1]/(Rad[-1]))
+
+        EV_EQ = (bh.gstar(TUn[-1])/bh.gstar(0.75e-9)) * (bh.gstarS(0.75e-9)/bh.gstarS(TUn[-1]))**(4./3.)
+        
+        DelNeff = ((8./7.)*(4./11.)**(-4./3.) + 3.045) * rDR_rRad * EV_EQ
+
+        return DelNeff

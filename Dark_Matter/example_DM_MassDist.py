@@ -100,7 +100,7 @@ print(f"Mass Distribution Time {end - start} s\n")
 
 #------------------------------------------------------------#
 #                                                            #
-#                     Conversion to Oh^2                     #
+#                     Determining Oh^2                     #
 #                                                            #
 #------------------------------------------------------------#
 
@@ -110,11 +110,10 @@ rc = 1.053672e-5*bh.cm_in_invkeV**-3*1.e-18   # Critical density in GeV^3
 
 T0 = 2.34865e-13  # Temperature today in GeV
 
-Oh2  = NDBE[-1] * nphi * 10.**(-3.*x[-1]) * 10.**mDM * (bh.gstarS(T0)/bh.gstarS(TUn[-1]))*(T0/TUn[-1])**3*(1/rc)
+Oh2   = NDBE[-1] * nphi * 10.**(-3.*x[-1]) * 10.**mDM * (bh.gstarS(T0)/bh.gstarS(TUn[-1]))*(T0/TUn[-1])**3*(1/rc)
+Oh2m  = NDBEm[-1] * nphi * 10.**(-3.*xm[-1]) * 10.**mDM * (bh.gstarS(T0)/bh.gstarS(TUnm[-1]))*(T0/TUnm[-1])**3*(1/rc)
 
-Oh2m = NDBEm[-1] * nphi * 10.**(-3.*xm[-1]) * 10.**mDM * (bh.gstarS(T0)/bh.gstarS(TUnm[-1]))*(T0/TUnm[-1])**3*(1/rc)
-
-print(Oh2,Oh2m)
+print(Oh2, Oh2m)
 print("Oh^2/Oh^2_mono = {}, Diff = {} %".format(Oh2/Oh2m, 100.*(Oh2-Oh2m)/Oh2m))
 
 #===========================#
@@ -158,7 +157,6 @@ ax[1,1].set_xlabel(r"$log(a)$")
 ax[1,1].set_yscale('log')
 ax[1,1].legend(loc="lower left", fontsize = "small")
 
-plt.savefig("./Example_solution_DNeff_Mass_Dist.pdf")
 plt.show()
 
 
