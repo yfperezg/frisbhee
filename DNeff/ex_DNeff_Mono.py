@@ -33,7 +33,7 @@ from numpy import absolute, angle, array, savetxt
 
 import BHProp as bh # Schwarzschild and Kerr BHs library
 
-from SolFBEqs_DR import FBEqs_Sol # Main Solver
+from DNeff_Mono import FBEqs_Sol # Main Solver
 
 #----------------------------------------#
 #           Main Parameters              #
@@ -44,16 +44,7 @@ asi = 0.99  # Initial a* value, a* = 0. -> Schwarzschild, a* > 0. -> Kerr.
 bi  = -3.   # Log10@beta^\prime
 sDR = 2.    # Spin of Dark Radiation
 
-if sDR == 0.:
-    sDRs = 'scalar'
-elif sDR == 0.5:
-    sDRs = 'fermion'
-elif sDR == 1.:
-    sDRs = 'vector'
-elif sDR == 2.:
-    sDRs = 'graviton'
-
-print(sDR, sDRs)
+Dic_sDR = {0.:'scl', 0.5:'fer', 1.:'vec', 2.:'gra'}
 
 #------------------------------------------------------------------------------------------------------#
 #          We call the solver, and save the arrays containing the full evolution of the PBH,           #
@@ -68,7 +59,7 @@ a, t, MBH, ast, Rad, PBH, TUn, DRad  = Oh2m.Solt()
 # Saving the arrays...
 
 solTab = array([a, t, ast, MBH, Rad, PBH, TUn, DRad])
-savetxt("./Data/DNeff/SolFBEqs_mono_"+sDRs+"_a*="+str(asi)+".txt",solTab.T)
+savetxt("./Data/DNeff/SolFBEqs_mono_"+Dic_sDR[sDR]+"_a*="+str(asi)+".txt",solTab.T)
 
 # Determining DNeff...
 
