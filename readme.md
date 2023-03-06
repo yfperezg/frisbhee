@@ -38,4 +38,4 @@ These should be installed in order to FRISBHEE to run.
 #### Credits
 
 If using this code, please cite:
-- arXiv:2107.00013, arXiv:2107.00016, arXiv:2207.09462, arXiv:2212.XXXXX
+- arXiv:2107.00013, arXiv:2107.00016, arXiv:2207.09462, arXiv:2212.03878
