@@ -6,5 +6,4 @@ dependencies:
   - setuptools
   - matplotlib
   - scipy
-  - pathos
   - tqdm
