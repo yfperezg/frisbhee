@@ -49,7 +49,9 @@ SBHi  = 2.*pi*bh.GN*(10.**Mi/bh.GeV_in_g)**2*(1. + sqrt(1. - asi**2)) # Initial 
 #                              as function of the log_10 @ scale factor.                               #
 #------------------------------------------------------------------------------------------------------#
 
-Oh2m = FBEqs_Sol(Mi, asi, bi, False)
+end_evol_at_Pagetime = False # To choose whether to stop the evolution at the Page time
+
+Oh2m = FBEqs_Sol(Mi, asi, bi, end_evol_at_Pagetime)
 
 a, t, MBH, ast, SBH, SRD, Rad, PBH, TUn, Teql, Tdec, Tev, x_Page, t_Page  = Oh2m.Solt()
 
