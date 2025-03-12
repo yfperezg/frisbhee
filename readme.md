@@ -11,11 +11,17 @@ We provide codes for monochromatic and extended mass and spin distributions.
 
 The main classes in the folder DNeff return the full evolution of the PBH, SM and Dark Radiation comoving energy densities,
 together with the evolution of the PBH mass and spin as function of the $\log_{10}$ @ scale factor.
-The program "DNeff_Mono.py" assumes a monochromatic distribution, "DNeff_MassDist.py" considers mass distributions only --valid only for Schwarzschild PBHs--, 
-and "DNeff_SpinMassDist.py" considers extended distributions in both mass and spin.
+The program "mono.py" assumes a monochromatic distribution, "massdist.py" considers mass distributions only --valid only for Schwarzschild PBHs--, 
+and "spinmassdist.py" considers extended distributions in both mass and spin.
 
-The example script "ex_DNeff_Mono.py" containts the final determination of DNeff depending on the model parameters for the monochromatic scenario.
-"ex_DNeff_MassDist.py" and "ex_DNeff_SpinMassDist.py" determine DNeff for extended mass and mass & spin distributions, respectively.
+The example script "ex_mono.py" containts the final determination of DNeff depending on the model parameters for the monochromatic scenario.
+"ex_massDist.py" and "ex_spinmassdist.py" determine DNeff for extended mass and mass & spin distributions, respectively.
+
+To run the codes, type:
+```
+python3 -m folder.file
+```
+where folder corresponds to the folder where the file is. Note that it is not necessary to type the .py
 
 #### Dark Matter
 
