@@ -24,15 +24,14 @@ The example script "ex_mono.py" containts the final determination of DNeff depen
 
 #### Dark Matter
 
-The main classes in in the folder Dark_Matter contain the determination the relic abundance in the case of Dark Matter produced from BH evaporation for 
-monochromatic and extended distributions.
-The program "SolFBEqs_Mono.py" assumes a monochromatic distribution, "SolFBEqsMassDist.py" considers mass distributions only --valid only for Schwarzschild PBHs--, 
-and "SolFBEqs_SpinMassDist.py" considers extended distributions in both mass and spin.
+The main classes in in the folder ```dm``` contain the determination the relic abundance in the case of Dark Matter produced from BH evaporation for monochromatic and extended distributions.
+The program "mono.py" assumes a monochromatic distribution, "massdist.py" considers mass distributions only --valid only for Schwarzschild PBHs--, 
+and "spinmassdist.py" considers extended distributions in both mass and spin.
 
-"Omega_h2_FI.py" computes the relic abundance for a Freeze-In scenario, together with the DM produced from the evaporation.
+"freeze_in.py" computes the relic abundance for a Freeze-In scenario, together with the DM produced from the evaporation.
 This code is only valid for monochromatic distributions.
 
-The scripts "Example_DM_MassDist.py", "Example_DM_SpinMassDist.py" and "Example_FI.py" contain examples on how to use the aforementioned classes. 
+The scripts "ex_massdist.py", "ex_spinmassdist.py" and "ex_FI.py" contain examples on how to use the aforementioned classes. 
 The notebooks "Example_Dist.ipynb" and "Example_FI.ipynb" contain the same example as in the python scripts
 
 #### Required Modules
