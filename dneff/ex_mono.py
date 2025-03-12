@@ -44,9 +44,9 @@ plt.rcParams['font.size'] = 15
 #           Main Parameters              #
 #----------------------------------------#
 
-Mi  = 4.    # Log10@ Initial BH mass in g
-asi = 0.  # Initial a* value, a* = 0. -> Schwarzschild, a* > 0. -> Kerr.
-bi  = -3.   # Log10@beta^\prime
+Mi  = 4    # Log10@ Initial BH mass in g
+asi = 0.9999  # Initial a* value, a* = 0. -> Schwarzschild, a* > 0. -> Kerr.
+bi  = -3   # Log10@beta^\prime
 sDR = 2.0    # Spin of Dark Radiation
 
 Dic_sDR = {0.:'scl', 0.5:'fer', 1.:'vec', 2.:'gra'}
@@ -87,13 +87,13 @@ rtot = rrad + rpbh
 
 # Plot
 
-title_1 = r"$M_{{\rm PBH}}^{{\rm in}}=10^{{{}}}$ g, ".format(Mi) + "$a_{{\star}}={{{}}}$".format(asi)
-title_2 = r"${{\beta}}^\prime=10^{{{}}}$".format(bi)
+title_1 = r'$M_{{\rm PBH}}^{{\rm in}}=10^{{{0}}}~g$, '.format(Mi) + r'$a_\star=${}'.format(asi)
+title_2 = r'${{\beta}}^\prime=10^{{{0}}}$'.format(bi)
 
-fig, ax = plt.subplots(2, 2, figsize=(12.,7.5))
+fig, ax = plt.subplots(2, 2, figsize=(10.,7.5), constrained_layout=True)
 
 ax[0,0].plot(t/t[-1], MBH/10.**Mi, label='PBH Mass', color=(0.39, 0.0, 0.8))
-ax[0,0].plot(t/t[-1], ast/asi, label='PBH $a_\star$', dashes=[6, 2], color=(0.0, 0.7, 0.44))
+ax[0,0].plot(t/t[-1], ast/asi, label=r'PBH $a_{\star}$', dashes=[6, 2], color=(0.0, 0.7, 0.44))
 ax[0,0].set_title(title_1)
 ax[0,0].set_xlabel(r"${{\xi = t/\tau}}$")
 ax[0,0].set_ylabel(r"$f(t)$")
@@ -105,7 +105,7 @@ ax[0,1].plot(a, 10**(3.*a)*rrad, label='SM Radiation', lw = 1.5, color=(0.2, 0.6
 ax[0,1].plot(a, 10**(3.*a)*rpbh, label='PBH', lw = 1.5, color='k')
 ax[0,1].plot(a, 10**(3.*a)*rdrd, label='Dark Radiation', color=(0.96, 0.22, 0.))
 ax[0,1].set_title(title_2)
-#ax[0,1].set_ylim(1.e45, 1.e54) 
+ax[0,1].set_ylim(1.e43, 1.e57) 
 ax[0,1].set_yscale('log')
 ax[0,1].set_xlabel(r"${{\log}}(a)$")
 ax[0,1].set_ylabel(r"${{\rho}}_{i} a^3$")
