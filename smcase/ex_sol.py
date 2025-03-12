@@ -37,9 +37,9 @@ from smcase.soleqs import FBEqs_Sol # Main Solver
 #           Main Parameters              #
 #----------------------------------------#
 
-Mi  =  2.0 # Log10@ Initial BH mass in g
+Mi  =  2 # Log10@ Initial BH mass in g
 asi =  0.9999 # Initial a* value, a* = 0. -> Schwarzschild, a* > 0. -> Kerr.
-bi  = -5.0 # Log10@beta^\prime
+bi  = -5 # Log10@beta^\prime
 
 SBHi  = 2.*pi*bh.GN*(10.**Mi/bh.GeV_in_g)**2*(1. + sqrt(1. - asi**2)) # Initial Bekenstein-Hawking entropy  -- Dimensionless
 
@@ -71,10 +71,10 @@ rtot = rrad + rpbh
 
 # Plot
 
-title_1 = '$M_{\\rm PBH}^{\\rm in}=10$^'+'{} g, '.format(Mi) + '$a_\\star=${}'.format(asi)
-title_2 = '$\\beta^\\prime=10$^'+'{}'.format(bi)
+title_1 = r'$M_{{\rm PBH}}^{{\rm in}}=10^{{{0}}}~g$, '.format(Mi) + r'$a_\star=${}'.format(asi)
+title_2 = r'${{\beta}}^\prime=10^{{{0}}}$'.format(bi)
 
-fig, ax = plt.subplots(2, 2, figsize=(12.,7.5))
+fig, ax = plt.subplots(2, 2, figsize=(10.,7.5), constrained_layout=True)
 
 ax[0,0].plot(t/t[-1], MBH/10.**Mi, label='PBH Mass', color=(0.39, 0.0, 0.8))
 #ax[0,0].plot(t/t[-1], ast/asi, label='PBH $a_\star$', dashes=[6, 2], color=(0.0, 0.7, 0.44))
@@ -91,7 +91,7 @@ ax[0,1].plot(a, 10**(3.*a)*rpbh, label='PBH', lw = 1.5, color='k')
 ax[0,1].set_title(title_2)
 #ax[0,1].set_ylim(1.e45, 1.e54) 
 ax[0,1].set_yscale('log')
-ax[0,1].set_xlabel(r"$log(a)$")
+ax[0,1].set_xlabel(r"$\log(a)$")
 ax[0,1].set_ylabel(r"$\rho_{i} a^3$")
 ax[0,1].legend(loc="lower left", fontsize = "small")
 ax[0,1].axvline(x=x_Page, ls='-.', color='g')
@@ -99,17 +99,18 @@ ax[0,1].axvline(x=x_Page, ls='-.', color='g')
 
 ax[1,0].plot(a, TUn, color = '#66023C')
 ax[1,0].set_ylabel(r"$T_{\rm plasma}$ [GeV]")
-ax[1,0].set_xlabel(r"$log(a)$")
+ax[1,0].set_xlabel(r"$\log(a)$")
 ax[1,0].set_yscale('log')
 ax[1,0].axvline(x=x_Page, ls='-.', color='g')
 
-ax[1,1].plot(t/t[-1], SBH/SBHi)
-ax[1,1].plot(t/t[-1], SRD/SBHi)
+ax[1,1].plot(t/t[-1], SBH/SBHi, label=r'${\tt BH}$ Entropy')
+ax[1,1].plot(t/t[-1], SRD/SBHi, label='Radiation Entropy')
 ax[1,1].set_ylim(0, 1.0) 
 ax[1,1].set_ylabel(r"$S/S_{in}$")
 ax[1,1].set_xlabel(r"$\xi = t/\tau$")
 #ax[1,1].set_yscale('log')
 ax[1,1].axvline(x=t_Page/t[-1], ls='-.', color='g')
+ax[1,1].legend(loc="upper right", fontsize = "small")
 
 plt.savefig(path+"/plots/Example_solution.pdf")
 plt.show()
