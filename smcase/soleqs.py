@@ -115,7 +115,7 @@ def FBEqs(x, v, xilog10):
     dSBHdx   = - 2. * pi * (2.*FSM + (2.*FSM - ast**2 * GSM)/sqrt(1. - ast**2))/(bh.GN * M_GeV)/H
     dSRaddx  =   ZSM/(bh.GN * M_GeV)/H
     
-    drRaddx  = - (dM_GeVdx/M_GeV) * 10**xff * rPBH
+    drRaddx  = - (dM_GeVdx/M_GeV) * a * rPBH
     drPBHdx  = + (dM_GeVdx/M_GeV) * rPBH
     
     dTdx     = - (Tp/Del) * (1.0 - (bh.gstar(Tp)/bh.gstarS(Tp))*(drRaddx/(4.*rRad)))
