@@ -17,55 +17,15 @@ from scipy.optimize import root
 from scipy.special import zeta, kn, spherical_jn, jv
 from scipy.interpolate import RectBivariateSpline
 
+import os
+path, filename = os.path.split(os.path.realpath(__file__))
 
-from numpy import sqrt, log, exp, log10, pi, logspace, linspace, seterr, min, max, append
+
+from numpy import sqrt, log, exp, log10, pi, tanh, logspace, linspace, seterr, min, max, append
 from numpy import loadtxt, zeros, floor, ceil, unique, sort, cbrt, concatenate, delete, real
 
 from collections import OrderedDict
 olderr = np.seterr(all='ignore')
-
-# Particle masses, in GeV
-
-mW   = 80.379
-mZ   = 91.1876
-mH   = 125.18
-me   = 0.5109989461e-3
-mmu  = 105.6583745e-3
-mtau = 1.77686
-mu   = 336e-3#2.2e-3
-md   = 340e-3#4.6e-3
-ms   = 486e-3#95e-3
-mc   = 1.275
-mb   = 4.18
-mt   = 173.1
-mg   = 0.6   # Ficticious gluon mass ---> indicates the QCD phase transition, following PRD41(1990)3052
-
-m_pi0 = 0.1349768   # Neutral pion mass
-m_pic = 0.13957039  # Charged pion mass
-
-# Neutrino parameters
-
-Dm31 = 2.511e-3 # Atmospheric quadratic neutrino mass difference, in eV^2
-Dm21 = 7.410e-5 # Solar quadratic neutrino mass difference, in eV^2
-
-# Degrees of freedom of the SM ---> Before the EW phase transition
-
-gW  = 2.*2.     # W
-gZ  = 2.        # Z
-gH  = 4.        # Higgs
-gp  = 2.        # photon
-gg  = 2.        # graviton
-ggl = 8.*2.       # gluons
-gl  = 2.*2.     # leptons
-gq  = 2.*2.*3  # quarks
-gnu = 2.        # LH neutrino
-
-gf = 3.*gnu + 3.*gl + 6.*gq   # Total number of SM fermion dofs 
-gs = gH                       # Total number of SM scalar dofs
-gv = gW + gZ + gp + gg + ggl  # Total number of SM vector dofs
-
-g_pi0 = 1 # Neutral pion
-g_pic = 2 # Charged pion
 
 # Constants
 
@@ -76,7 +36,8 @@ mPL   = 1./sqrt(GN)      # Planck mass in GeV
 v     = 174              # Higgs vev
 csp   = 0.35443          # sphaleron conversion factor
 GF    = 1.1663787e-5     # Fermi constant in GeV^-2
-LQCD  = 0.2              # Lambda QCD in GeV
+LQCD  = 0.322            # Lambda QCD in GeV
+TEW   = 159.5            # Electroweak phase transition temperature in GeV
 
 # Conversion factors
 
@@ -89,9 +50,79 @@ GeV_in_invs  = cm_in_invkeV * c * 1.e11  # 1 GeV in s^-1
 
 MPL   = mPL * GeV_in_g        # Planck mass in g
 kappa = mPL**4 * GeV_in_g**3  # Evaporation constant in g^3 * GeV -- from PRD41(1990)3052
-mPL_red = 1./sqrt(8.*pi*GN)   # Reduced mass Planck
+mPL_red = 1./sqrt(8.*pi*GN)   # Reduced mass Planck in GeV
 
-# BH Temperature in GeV
+# Particle masses, in GeV
+
+mW   = 80.379
+mZ   = 91.1876
+mH   = 125.18
+me   = 0.5109989461e-3
+mmu  = 105.6583745e-3
+mtau = 1.77686
+mu   = 336e-3#2.2e-3#
+md   = 340e-3#4.6e-3#
+ms   = 486e-3#95e-3#
+mc   = 1.275
+mb   = 4.18
+mt   = 173.1
+mg   = 0.200        # Ficticious gluon mass ---> indicates the QCD phase transition, following PRD41(1990)3052
+
+m_pi0 = 0.1349768   # Neutral pion mass
+m_pic = 0.13957039  # Charged pion mass
+m_Kc  = 493.677     # Charged Kaon
+m_K0  = 497.611     # Neutral Kaon
+
+# Particles' lifetime, in s
+
+tau_W   = 2.202/GeV_in_invs
+tau_Z   = 2.4955/GeV_in_invs
+tau_H   = 3.7e-3/GeV_in_invs
+tau_mu  = 2.1969811e-6
+tau_tau = 2.903e-13 
+tau_t   = 1.42/GeV_in_invs
+
+tau_pic = 2.60e-8 # charged pions in s
+tau_pi0 = 8.5e-17 # pi 0
+
+tau_Kc  = 1.2380e-8
+
+# Neutrino parameters, from NuFit6, assuming NO and taking the results with SK
+
+Dm31 = 2.513e-3 # Atmospheric quadratic neutrino mass difference, in eV^2
+Dm21 = 7.490e-5 # Solar quadratic neutrino mass difference, in eV^2
+
+# Degrees of freedom of the SM 
+
+# ---> Above the EW phase transition
+gW_aEW  = 2.*2.     # W
+gZ_aEW  = 2.        # Z
+gH_aEW  = 4.        # Higgs
+
+# ---> Below the EW phase transition
+gW  = 2.*3.     # W
+gZ  = 3.        # Z
+gH  = 1.        # Higgs
+gp  = 2.        # photon
+gg  = 2.        # graviton
+
+ggl = 8.*2.     # gluons
+gl  = 2.*2.     # leptons
+gq  = 2.*2.*3   # quarks
+gnu = 2.        # LH neutrino
+
+gf = 3.*gnu + 3.*gl + 6.*gq   # Total number of SM fermion dofs 
+gs = gH                       # Total number of SM scalar dofs
+gv = gW + gZ + gp + gg + ggl  # Total number of SM vector dofs
+
+g_pi0 = 1 # Neutral pion
+g_pic = 2 # Charged pion
+
+f_QCD = 1 # Parameter to constrain how fast we change between quarks to hadrons degrees-of-freedom
+
+#---------------------------------------------------------------------------------------------------------------------#
+#                                                  BH Temperature in GeV                                              #
+#---------------------------------------------------------------------------------------------------------------------#
 
 def TBH(M, astar):
 
@@ -99,9 +130,85 @@ def TBH(M, astar):
     
     return (1./(4.*pi*GN*M_GeV))*(sqrt(abs(1. - astar**2))/(1. + sqrt(abs(1. - astar**2)))) # M in g
 
+#-------------------------------------------------------------------------------------------------------------#
+#             Interpolating Tables with energy-integrated Hawking spectrum, f, g and s functions              #
+#-------------------------------------------------------------------------------------------------------------#
+
+ast_tab = np.loadtxt(os.path.join(path, "data/absxsec/ast_tab.txt")) # Array containing a* values
+z_tab   = np.loadtxt(os.path.join(path, "data/absxsec/z_tab.txt"))   # Array containing z = GMm, m= particle's mass, values
+
+# Scalars
+
+psi_scl_tab   = np.loadtxt(os.path.join(path, "data/absxsec/psi_scl_z.txt"))
+phi_scl_tab   = np.loadtxt(os.path.join(path, "data/absxsec/phi_scl_z.txt"))
+gamma_scl_tab = np.loadtxt(os.path.join(path, "data/absxsec/gam_scl_z.txt"))
+zeta_scl_tab  = np.loadtxt(os.path.join(path, "data/absxsec/zeta_scl_z.txt"))
+
+
+psi_scl_int   = interpolate.RegularGridInterpolator((ast_tab, z_tab), psi_scl_tab, bounds_error=False, fill_value = None)
+phi_scl_int   = interpolate.RegularGridInterpolator((ast_tab, z_tab), phi_scl_tab, bounds_error=False, fill_value = None)
+gamma_scl_int = interpolate.RegularGridInterpolator((ast_tab, z_tab), gamma_scl_tab, bounds_error=False, fill_value = None)
+zeta_scl_int  = interpolate.RegularGridInterpolator((ast_tab, z_tab), zeta_scl_tab, bounds_error=False, fill_value = None)
+
+# Fermions
+
+psi_fer_tab   = np.loadtxt(os.path.join(path, "data/absxsec/psi_fer_z.txt"))
+phi_fer_tab   = np.loadtxt(os.path.join(path, "data/absxsec/phi_fer_z.txt"))
+gamma_fer_tab = np.loadtxt(os.path.join(path, "data/absxsec/gam_fer_z.txt"))
+zeta_fer_tab  = np.loadtxt(os.path.join(path, "data/absxsec/zeta_fer_z.txt"))
+
+
+psi_fer_int   = interpolate.RegularGridInterpolator((ast_tab, z_tab), psi_fer_tab, bounds_error=False, fill_value = None)
+phi_fer_int   = interpolate.RegularGridInterpolator((ast_tab, z_tab), phi_fer_tab, bounds_error=False, fill_value = None)
+gamma_fer_int = interpolate.RegularGridInterpolator((ast_tab, z_tab), gamma_fer_tab, bounds_error=False, fill_value = None)
+zeta_fer_int  = interpolate.RegularGridInterpolator((ast_tab, z_tab), zeta_fer_tab, bounds_error=False, fill_value = None)
+
+# Vectors
+
+psi_vec_tab   = np.loadtxt(os.path.join(path, "data/absxsec/psi_vec_z.txt"))
+phi_vec_tab   = np.loadtxt(os.path.join(path, "data/absxsec/phi_vec_z.txt"))
+gamma_vec_tab = np.loadtxt(os.path.join(path, "data/absxsec/gam_vec_z.txt"))
+zeta_vec_tab  = np.loadtxt(os.path.join(path, "data/absxsec/zeta_vec_z.txt"))
+
+
+phi_vec_int   = interpolate.RegularGridInterpolator((ast_tab, z_tab), phi_vec_tab, bounds_error=False, fill_value = None)
+psi_vec_int   = interpolate.RegularGridInterpolator((ast_tab, z_tab), psi_vec_tab, bounds_error=False, fill_value = None)
+gamma_vec_int = interpolate.RegularGridInterpolator((ast_tab, z_tab), gamma_vec_tab, bounds_error=False, fill_value = None)
+zeta_vec_int  = interpolate.RegularGridInterpolator((ast_tab, z_tab), zeta_vec_tab, bounds_error=False, fill_value = None)
+
+# Spin-2
+
+psi_gra_tab   = np.loadtxt(os.path.join(path, "data/absxsec/psi_gra_z.txt"))
+phi_gra_tab   = np.loadtxt(os.path.join(path, "data/absxsec/phi_gra_z.txt"))
+gamma_gra_tab = np.loadtxt(os.path.join(path, "data/absxsec/gam_gra_z.txt"))
+zeta_gra_tab  = np.loadtxt(os.path.join(path, "data/absxsec/zeta_gra_z.txt"))
+
+
+psi_gra_int   = interpolate.RegularGridInterpolator((ast_tab, z_tab), psi_gra_tab, bounds_error=False, fill_value = None)
+phi_gra_int   = interpolate.RegularGridInterpolator((ast_tab, z_tab), phi_gra_tab, bounds_error=False, fill_value = None)
+gamma_gra_int = interpolate.RegularGridInterpolator((ast_tab, z_tab), gamma_gra_tab, bounds_error=False, fill_value = None)
+zeta_gra_int  = interpolate.RegularGridInterpolator((ast_tab, z_tab), zeta_gra_tab, bounds_error=False, fill_value = None)
+
 #-------------------------------------------------------------------------------------------------------------------------------------#
 #                                                  Momentum Integrated Rate for Kerr BHs                                              #
 #-------------------------------------------------------------------------------------------------------------------------------------#
+
+#-------------------------------------------------------------------#
+#                    Integrated Hawking Spectrum                    #
+#-------------------------------------------------------------------#
+
+def hs(astar): return (0.3891202551434314 - 0.02735815283383375*astar - 0.022376552767463448*astar**2 
+                     + (0.00009835559447136233*astar**2)/(-1.025 + astar)**2 - 0.48219183071498173*astar**3 + 0.12926706388940423*astar**4)
+
+def hf(astar): return (-0.04716796508441029 + 0.0003642184365387838*astar + 0.6381107254113888*astar**2 
+                     + (0.000023461795968477088*astar**2)/(-1.025 + astar)**2 - 0.16089673280158695*astar**3 - 0.11259864747002321*astar**4)
+    
+def hv(astar): return (-0.5636366140508233 - 0.0802110644822287*astar + 3.2953803997049373*astar**2 
+                     + (0.00009510434823780855*astar**2)/(-1.025 + astar)**2 - 3.6843970709508245*astar**3 + 1.8385940661205495*astar**4)
+
+def hg(astar): return (-1.6874671321658943 + 0.028948686832896774*astar + 8.980166961613598*astar**2 
+                     + (0.00030046706616716914*astar**2)/(-1.025 + astar)**2 - 11.901307189829424*astar**3 + 6.314005790871085*astar**4)
+
 
 
 def Gamma_S(M, ast, m):# Scalar, in GeV
@@ -110,26 +217,19 @@ def Gamma_S(M, ast, m):# Scalar, in GeV
 
     TKBH = TBH(M, ast)
     
-    hs = 10.**(0.39273676881556124 - 0.07212262928269993*ast + 0.12449061251994815*ast**2
-               + (0.00009524790725091*ast**2)/(-1.025 + ast)**2 -  0.6630039387105334*ast**3 + 0.20597619699493652*ast**4)
+    Gs = 10.**hs(ast)
 
-    if m > 0.:
-        
-        a0, a1, a2, a3, a4, a5 = [0.908948, -0.717238, 4.53781, -10.7304, 7.11179, -0.000286806]
-        b0, b1, b2, b3, b4, b5 = [7.71534, -1.25411, 3.64632, -18.5727, 10.439, -0.000485377]
-        c0, c1, c2, c3, c4, c5 = [-0.402682, 0.156468, -2.03774, 7.73825, -6.39103, 0.000585775]
-        
-        B  = 10.**(a0 + a1*ast + a2*ast**2 + a3*ast**3 + a4*ast**4 + (a5*ast**2)/(ast-1.025)**2)
-        C  = b0 + b1*ast + b2*ast**2 + b3*ast**3 + b4*ast**4 + (b5*ast**2)/(ast-1.025)**2
-        nu = 10.**(c0 + c1*ast + c2*ast**2 + c3*ast**3 + c4*ast**4 + (c5*ast**2)/(ast-1.025)**2)
+    z = GM * m 
 
-        z = GM * m
+    if -3.0 < log10(z) < log10(2.5):
+        
+        In =  psi_scl_int([ast, log10(z)])[0]  
+        
+    elif  log10(z) < -3.0:
+        
+        In = Gs
 
-        In = hs * (1. - (1. + exp(-B * log10(abs(z)) - C))**(-nu)) # DM emission rate including greybody factors
-        
-    else:
-        
-        In = hs
+    else: In = 0.
     
     return  (27/(1024. * pi**4 * GM)) * In
 
@@ -140,26 +240,19 @@ def Gamma_F(M, ast, m):# Fermion
 
     TKBH = TBH(M, ast)
 
-    hf = 10.**(-0.04783695964578665 + 0.013984310871408692*ast + 0.5688253273581945*ast**2
-               + (0.00003280653440514944*ast**2)/(-1.025 + ast)**2 - 0.036327327226993424*ast**3 - 0.18526329851489926*ast**4)
+    G12  = 10.**hf(ast)
 
-    if m > 0.:
-        
-        a0, a1, a2, a3, a4, a5 = [1.02698, 0.0915114, -0.723386, 1.48036, -1.38637, 0.000193827]
-        b0, b1, b2, b3, b4, b5 = [8.66596, -0.845019, 1.08049, -8.92803, 2.77038, -0.00131193]
-        c0, c1, c2, c3, c4, c5 = [-0.46751, 0.137131, -0.504895, 0.781955, 0.223372, -0.000357428]
+    z = GM * m 
 
-        B  = 10.**(a0 + a1*ast + a2*ast**2 + a3*ast**3 + a4*ast**4 + (a5*ast**2)/(ast-1.025)**2)
-        C  = b0 + b1*ast + b2*ast**2 + b3*ast**3 + b4*ast**4 + (b5*ast**2)/(ast-1.025)**2
-        nu = 10.**(c0 + c1*ast + c2*ast**2 + c3*ast**3 + c4*ast**4 + (c5*ast**2)/(ast-1.025)**2)
+    if -3.0 < log10(z) < log10(2.5):
         
-        z = GM * m
+        In =  phi_fer_int([ast, log10(z)])[0]  
+        
+    elif log10(z) < -3.0:
+        
+        In = G12
 
-        In = hf * (1. - (1. + exp(-B * log10(abs(z)) - C))**(-nu)) # DM emission rate including greybody factors
-                        
-    else:
-        
-        In = hf
+    else: In = 0.
     
     return  (27/(1024. * pi**4 * GM)) * In
 
@@ -169,27 +262,20 @@ def Gamma_V(M, ast, m):# Vector
     GM = GN * (M/GeV_in_g) # in GeV^-1
 
     TKBH = TBH(M, ast)
-
-    hv = 10.**(-0.5599312867164357 - 0.12712336386255416*ast + 3.446923230985025*ast**2
-               + (0.00009543107588469785*ast**2)/(-1.025 + ast)**2 - 3.8597576626367047*ast**3 + 1.903809455654925*ast**4)
     
-    if m > 0.:
+    G1 = 10.**hv(ast)
+
+    z = GM * m 
+
+    if -3.0 < log10(z) < log10(2.5):
         
-        a0, a1, a2, a3, a4, a5 = [1.13063, 0.10242, -0.665276, 1.5559, -1.30436, -0.0000798625]
-        b0, b1, b2, b3, b4, b5 = [9.1147, -0.450361, -3.4622, 4.33463, -6.48433, -0.000418639]
-        c0, c1, c2, c3, c4, c5 = [-0.522355, -0.17723, 1.15501, -2.50918, 1.95021, 0.0000871877]
-
-        B  = 10.**(a0 + a1*ast + a2*ast**2 + a3*ast**3 + a4*ast**4 + (a5*ast**2)/(ast-1.025)**2)
-        C  = b0 + b1*ast + b2*ast**2 + b3*ast**3 + b4*ast**4 + (b5*ast**2)/(ast-1.025)**2
-        nu = 10.**(c0 + c1*ast + c2*ast**2 + c3*ast**3 + c4*ast**4 + (c5*ast**2)/(ast-1.025)**2)
-
-        z = GM * m
-
-        In = hv * (1. - (1. + exp(-B * log10(abs(z)) - C))**(-nu)) # DM emission rate including greybody factors
-                                
-    else:
+        In =  phi_vec_int([ast, log10(z)])[0]  
         
-        In = hv
+    elif  log10(z) < -3.0:
+        
+        In = G1
+
+    else: In = 0.
     
     return  (27/(1024. * pi**4 * GM)) * In
 
@@ -199,34 +285,19 @@ def Gamma_G(M, ast, m):# Spin 2
 
     TKBH = TBH(M, ast)
 
-    hg = 10.**(-1.6914380919125194 + 0.10713534704840354*ast + 8.602630801168678*ast**2
-               + (0.00030945691177488064*ast**2)/(-1.025 + ast)**2 - 11.26044905052906*ast**3 + 5.96247972620344*ast**4)
+    G2 = 10.**fg(ast)
 
-    if m > 0.:
+    z = GM * m 
+
+    if -3.0 < log10(z) < log10(2.5):
         
-        if ast <= 1.e-5:
-
-            B, C, nu = [22.325, -21.2326, 0.12076]
-
-            z = m/TKBH
-
-        else:
-
-            a0, a1, a2, a3, a4, a5 = [1.28037, 0.0711855, -0.239972, 0.762718, -0.673144, -0.0000505832]
-            b0, b1, b2, b3, b4, b5 = [9.1527, -0.441805, -7.91835, 13.9276, -12.4764, -0.000891415]
-            c0, c1, c2, c3, c4, c5 = [-0.643453, -0.0804094, 0.326238, -0.918118, 0.777633, 0.00005796]
-
-            B  = 10.**(a0 + a1*ast + a2*ast**2 + a3*ast**3 + a4*ast**4 + (a5*ast**2)/(ast-1.025)**2)
-            C  = b0 + b1*ast + b2*ast**2 + b3*ast**3 + b4*ast**4 + (b5*ast**2)/(ast-1.025)**2
-            nu = 10.**(c0 + c1*ast + c2*ast**2 + c3*ast**3 + c4*ast**4 + (c5*ast**2)/(ast-1.025)**2)
-
-            z = GM * m
-
-        In = hg * (1. - (1. + exp(-B * log10(abs(z)) - C))**(-nu)) # DM emission rate including greybody factors
-                                        
-    else:
+        In =  phi_gra_int([ast, log10(z)])[0]  
         
-        In = hg
+    elif  log10(z) < -3.0:
+        
+        In = G2
+
+    else: In = 0.
     
     return  (27/(1024. * pi**4 * GM)) * In
 
@@ -274,7 +345,7 @@ def Gamma_DR(M, ast, mdm, s):
 #-------------------------------------------------------------------------------------------------------------------------------------#
 
 #-------------------------------------------------------------------#
-#                     f = - M^2 dM/dt fitted functions                      #
+#                     f = - M^2 dM/dt fitted functions              #
 #-------------------------------------------------------------------#
 
 def fs(astar): return (-4.128749655067042 - 0.16759901907033878*astar + 1.290173196518525*astar**2 
@@ -303,23 +374,17 @@ def phi_s(M, ast, m):
 
     f0 = 10.**fs(ast)
 
-    if m > 0.:
-        
-        a0, a1, a2, a3, a4, a5 = [0.858267, 1.13329, -6.88816, 11.2483, -5.56238, 0.000101146]
-        b0, b1, b2, b3, b4, b5 = [7.06988, 2.40603, -21.8821, 25.0015, -11.0752, -0.00149611]
-        c0, c1, c2, c3, c4, c5 = [-0.256082, -2.10605, 13.1112, -23.5922, 12.7525, -0.000240998]
+    z = GM * m 
 
-        B  = 10.**(a0 + a1*ast + a2*ast**2 + a3*ast**3 + a4*ast**4 + (a5*ast**2)/(ast-1.025)**2)
-        C  = b0 + b1*ast + b2*ast**2 + b3*ast**3 + b4*ast**4 + (b5*ast**2)/(ast-1.025)**2
-        nu = 10.**(c0 + c1*ast + c2*ast**2 + c3*ast**3 + c4*ast**4 + (c5*ast**2)/(ast-1.025)**2)
+    if -3.0 < log10(z) < log10(2.5):
         
-        z = GM * m
-
-        In = f0 * (1. - (1. + exp(-B * log10(abs(z)) - C))**(-nu))   
+        In =  phi_scl_int([ast, log10(z)])[0] 
         
-    else:
+    elif log10(z) < -3.0:
         
         In = f0
+
+    else: In = 0.
 
     return In
 
@@ -333,23 +398,17 @@ def phi_f(M, ast, m):
 
     f12  = 10.**ff(ast)
 
-    if m > 0.:
+    z = GM * m 
+
+    if -3.0 < log10(z) < log10(2.5):
         
-        a0, a1, a2, a3, a4, a5 = [1.06034, -0.54818, 3.11063, -6.9571, 4.16081, 0.0000501825]
-        b0, b1, b2, b3, b4, b5 = [8.28637, 1.81691, -17.0186, 17.3372, -9.32249, -0.00102115]
-        c0, c1, c2, c3, c4, c5 = [-0.46356, 1.07903, -6.42023, 14.0977, -8.79169, 0.0000631419]
-
-        B  = 10.**(a0 + a1*ast + a2*ast**2 + a3*ast**3 + a4*ast**4 + (a5*ast**2)/(ast-1.025)**2)
-        C  = b0 + b1*ast + b2*ast**2 + b3*ast**3 + b4*ast**4 + (b5*ast**2)/(ast-1.025)**2
-        nu = 10.**(c0 + c1*ast + c2*ast**2 + c3*ast**3 + c4*ast**4 + (c5*ast**2)/(ast-1.025)**2)
-
-        z = GM * m
-
-        In = f12 * (1. - (1. + exp(-B * log10(abs(z)) - C))**(-nu))
+        In =  phi_fer_int([ast, log10(z)])[0] 
         
-    else:
+    elif  log10(z) < -3.0:
         
         In = f12
+
+    else: In = 0.
 
     return In
 
@@ -363,31 +422,17 @@ def phi_v(M, ast, m):
 
     f1 = 10.**fv(ast)
 
-    if m > 0.:
+    z = GM * m 
+
+    if -3.0 < log10(z) < log10(2.5):
         
-        if ast <= 1.e-5:
-
-            B, C, nu = [14.0361, -10.7138, 0.307206]
-
-            z = m/TKBH
-
-        else:
-
-            a0, a1, a2, a3, a4, a5 = [1.14914, 0.0233038, -0.267976, 0.496932, -0.732845, 0.0000736326]
-            b0, b1, b2, b3, b4, b5 = [9.02047, -1.60749, 2.4884, -14.6396, 7.17955, -0.0010815]
-            c0, c1, c2, c3, c4, c5 = [-0.517646, -0.0423408, 0.45894, -0.895684, 1.11853, -0.000231453]
-
-            B  = 10.**(a0 + a1*ast + a2*ast**2 + a3*ast**3 + a4*ast**4 + (a5*ast**2)/(ast-1.025)**2)
-            C  = b0 + b1*ast + b2*ast**2 + b3*ast**3 + b4*ast**4 + (b5*ast**2)/(ast-1.025)**2
-            nu = 10.**(c0 + c1*ast + c2*ast**2 + c3*ast**3 + c4*ast**4 + (c5*ast**2)/(ast-1.025)**2)
-
-            z = GM * m
-
-        In = f1 * (1. - (1. + exp(-B * log10(abs(z)) - C))**(-nu))
+        In =  phi_vec_int([ast, log10(z)])[0] 
         
-    else:
+    elif  log10(z) < -3.0:
         
         In = f1
+
+    else: In = 0.
     
     return In
 
@@ -401,31 +446,17 @@ def phi_g(M, ast, m):
 
     f2 = 10.**fg(ast)
 
-    if m > 0.:
+    z = GM * m 
+
+    if -3.0 < log10(z) < log10(2.5):
         
-        if ast <= 1.e-5:
-
-            B, C, nu = [21.50941, -20.5135, 0.173423]
-
-            z = m/TKBH
-
-        else:
-
-            a0, a1, a2, a3, a4, a5 = [1.30252, 0.0504643, -0.301552, 0.914737, -0.876773, -0.0000311124]
-            b0, b1, b2, b3, b4, b5 = [9.26442, -1.53376, -4.16324, 5.04574, -7.1057, -0.000616182]
-            c0, c1, c2, c3, c4, c5 = [-0.656544, -0.0596208, 0.416083, -1.15561, 1.05567, 0.0000348137]
-            
-            B  = 10.**(a0 + a1*ast + a2*ast**2 + a3*ast**3 + a4*ast**4 + (a5*ast**2)/(ast-1.025)**2)
-            C  = b0 + b1*ast + b2*ast**2 + b3*ast**3 + b4*ast**4 + (b5*ast**2)/(ast-1.025)**2
-            nu = 10.**(c0 + c1*ast + c2*ast**2 + c3*ast**3 + c4*ast**4 + (c5*ast**2)/(ast-1.025)**2)
-
-            z = GM * m
-
-        In = f2 * (1. - (1. + exp(-B * log10(abs(z)) - C))**(-nu))
+        In =  phi_gra_int([ast, log10(z)])[0]  
         
-    else:
+    elif  log10(z) < -3.0:
         
         In = f2
+
+    else: In = 0.
     
     return In
 
@@ -437,98 +468,40 @@ def fSM(M, ast):
 
     T = TBH(M, ast)
     
-    # Contribution from each particle --> We do not include the Graviton contribution here
+    ''' 
+    Contribution from each particle --> We do not include the Graviton contribution here.
+    For BH temperatures larger than the EW phase transition, we consider massless gauge bosons with 2 dofs and 4 scalar dofs
+    for below, we consider massive gauge bosons and 1 scalar dof.
+    Similarly, for the QCD phase transition, we consider all quarks dofs when BH temperature is above Lambda_QCD = 322 MeV. 
+    Below that temperature, we only consider the contribution of charged and neutral pions.
+    '''
 
     fgr =  0.
     fp  =  gp * phi_v(M, ast, 0.)  # Photon
     fgl = ggl * phi_v(M, ast, 0.6) # Gluon
-    fW  =  gW * phi_v(M, ast, mW)  # W
-    fZ  =  gZ * phi_v(M, ast, mZ)  # Z
-    fH  =  gH * phi_s(M, ast, mH)  # Higgs
+
+    # Electroweak dofs
+
+    fGB_aEW = gW_aEW * phi_v(M, ast, 0.)  + gZ_aEW * phi_v(M, ast, 0.)  + gH_aEW * phi_s(M, ast, 0.)  # above EW    
+
+    fGB_bEW = gW * phi_v(M, ast, mW)  + gZ * phi_v(M, ast, mZ)  + gH * phi_s(M, ast, mH)  # below EW
+
+    fGB = 0.5*(fGB_aEW + fGB_bEW + (fGB_aEW - fGB_bEW)*tanh((T-TEW)/10.))
 
     fnu = 3. * gnu * phi_f(M, ast, 0.) # Active neutrinos
     
     fl  = gl * (phi_f(M, ast, me) + phi_f(M, ast, mmu) + phi_f(M, ast, mtau))  # Charged leptons
 
-    if T >= LQCD:
+    # QCD dofs
+
+    fq_aLQCD  = gq * (phi_f(M, ast, mu) + phi_f(M, ast, md) + phi_f(M, ast, ms) +
+                phi_f(M, ast, mc) + phi_f(M, ast, mb) + phi_f(M, ast, mt))    # Quarks
+
+    fq_bLQCD  = g_pi0 * phi_s(M, ast, m_pi0) + g_pic * phi_f(M, ast, m_pic)   # Neutral and charged pions
+
+    fq = 0.5*(fq_aLQCD + fq_bLQCD + (fq_aLQCD - fq_bLQCD)*tanh((T-LQCD)/f_QCD))
     
-        fq  = gq * (phi_f(M, ast, mu) + phi_f(M, ast, md) + phi_f(M, ast, ms) +
-                    phi_f(M, ast, mc) + phi_f(M, ast, mb) + phi_f(M, ast, mt))    # Quarks
-        
-    else: # Below Lambda_QCD we only include pions
-
-        fq  = g_pi0 * phi_s(M, ast, m_pi0) + g_pi0 * phi_s(M, ast, m_pi0)
-    
-    return fgr + fp + fnu + fgl + fW + fZ + fH + fl + fq
-
-def fSM_test(M, ast):
-
-    T = TBH(M, ast)
-    
-    # Contribution from each particle --> We do not include the Graviton contribution here
-
-    fgr =  0.
-    fp  =  gp * phi_v(M, ast, 0.)  # Photon
-    fnu = 3. * gnu * phi_f(M, ast, 0.) # Active neutrinos
-
-    if T >= mW:  fW =  gW * phi_v(M, ast, 0.) 
-    else: fW = 0
-
-    if T >= mZ:  fZ =  gZ * phi_v(M, ast, 0.) 
-    else: fZ = 0.
-
-    if T >= mH:  fH =  gH * phi_s(M, ast, 0.)  # Higgs
-    else: fH = 0.
-
-    if T >= 0.6: fgl = ggl * phi_v(M, ast, 0.) # Gluon
-    else: fgl = 0.
-
-    if T >= mtau: ftau = gl*phi_f(M, ast, 0.)
-    else: ftau = 0.
-
-    if T >= mmu:  fmu = gl*phi_f(M, ast, 0.)
-    else: fmu = 0.
-
-    if T >= me:   fe = gl*phi_f(M, ast, 0.)
-    else: fe = 0.
-
-    fl = fe + fmu + ftau
-
-    if T >= LQCD:
-
-        if T >= mt: ft = gq * phi_f(M, ast, 0.)
-        else: ft = 0.
-
-        if T >= mb: fb = gq * phi_f(M, ast, 0.)
-        else: fb = 0.
-
-        if T >= mc: fc = gq * phi_f(M, ast, 0.)
-        else: fc = 0.
-
-        if T >= ms: fs = gq * phi_f(M, ast, 0.)
-        else: fs = 0.
-
-        if T >= md: fd = gq * phi_f(M, ast, 0.)
-        else: fd = 0.
-
-        if T >= mu: fu = gq * phi_f(M, ast, 0.)
-        else: fu = 0.
-
-        fq = fu + fd + fs + fc + fb + ft
-
-        
-    else: # Below Lambda_QCD we only include pions
-
-
-        if T >= m_pi0: fpi0 = g_pi0 * phi_f(M, ast, 0.)
-        else: fpi0 = 0.
-
-        if T >= m_pic: fpic = g_pic * phi_f(M, ast, 0.)
-        else: fpic = 0.
-
-        fq = fpi0 + fpic 
-    
-    return fgr + fp + fnu + fgl + fW + fZ + fH + fl + fq
+    return fgr + fp + fnu + fgl + fGB + fl + fq
 
 #--------------------------------------------------------------#
 #              SM Contribution + massive neutrinos             #
@@ -543,9 +516,14 @@ def fSM_nu(M, ast, m0):
     fgr =  0.
     fp  =  gp * phi_v(M, ast, 0.)  # Photon
     fgl = ggl * phi_v(M, ast, 0.6) # Gluon
-    fW  =  gW * phi_v(M, ast, mW)  # W
-    fZ  =  gZ * phi_v(M, ast, mZ)  # Z
-    fH  =  gH * phi_s(M, ast, mH)  # Higgs
+
+    # Electrowak dofs
+
+    fGB_aEW = gW_aEW * phi_v(M, ast, 0.)  + gZ_aEW * phi_v(M, ast, 0.)  + gH_aEW * phi_s(M, ast, 0.)  # above EW    
+
+    fGB_bEW = gW * phi_v(M, ast, mW)  + gZ * phi_v(M, ast, mZ)  + gH * phi_s(M, ast, mH)  # below EW
+
+    fGB = 0.5*(fGB_aEW + fGB_bEW + (fGB_aEW - fGB_bEW)*tanh((T-TEW)/10.))
 
     # Neutrino masses, assuming Normal Ordering, in GeV
 
@@ -556,18 +534,17 @@ def fSM_nu(M, ast, m0):
     fnu = gnu * (phi_f(M, ast, m1) + phi_f(M, ast, m2) + phi_f(M, ast, m3)) # Active Majorana neutrinos
     
     fl  = gl * (phi_f(M, ast, me) + phi_f(M, ast, mmu) + phi_f(M, ast, mtau))  # Charged leptons
-    
-    if T >= LQCD:
-    
-        fq  = gq * (phi_f(M, ast, mu) + phi_f(M, ast, md) + phi_f(M, ast, ms) +
-                    phi_f(M, ast, mc) + phi_f(M, ast, mb) + phi_f(M, ast, mt))    # Quarks
-        
-    else: # Below Lambda_QCD we only include pions
 
-        fq  = g_pi0 * phi_s(M, ast, m_pi0) + g_pi0 * phi_s(M, ast, m_pi0)
+    # QCD dofs
 
-    
-    return fgr + fp + fnu + fgl + fW + fZ + fH + fl + fq
+    fq_aLQCD  = gq * (phi_f(M, ast, mu) + phi_f(M, ast, md) + phi_f(M, ast, ms) +
+                phi_f(M, ast, mc) + phi_f(M, ast, mb) + phi_f(M, ast, mt))    # Quarks
+
+    fq_bLQCD  = g_pi0 * phi_s(M, ast, m_pi0) + g_pi0 * phi_s(M, ast, m_pi0)
+
+    fq = 0.5*(fq_aLQCD + fq_bLQCD + (fq_aLQCD - fq_bLQCD)*tanh((T-LQCD)/f_QCD))
+
+    return fgr + fp + fnu + fgl + fGB + fl + fq
 
 # RH neutrino contribution
 
@@ -630,17 +607,16 @@ def fSM_DS(M, ast, L_DS):
 
     T = TBH(M, ast)
 
-    # Electroweak + QCD gauge bosons + Higgs dofs
-    fv = (gW + gZ + gH + ggl + gp) * phi_v(M, ast, L_DS) 
+    # Electroweak + QCD gauge bosons dofs
+    fv = (gW_aEW + gZ_aEW + ggl + gp) * phi_v(M, ast, L_DS) 
     
     # Higgs 
-    fs = gH * phi_s(M, ast, L_DS)
+    fs = gH_aEW * phi_s(M, ast, L_DS)
 
     # Fermions
-    ff = (gnu + gl + gq) * phi_f(M, ast, L_DS) 
+    ff = gf * phi_f(M, ast, L_DS) 
 
     # Graviton
-
     fg = gg * phi_g(M, ast, L_DS)
     
     return fv + fs + ff + fg
@@ -671,27 +647,23 @@ def gG_f(astar): return (-4.27332250841818 - 0.19349041845338877*astar + 6.19195
 def gam_s(M, ast, m):
 
     GM = GN * (M/GeV_in_g) # in GeV^-1
-
-    g0 = 10.**gs_f(ast)
     
-    if m > 0.:
-              
-        z = GM * m # Dimensionless parameter -- gravitational coupling GMm
+    TKBH = TBH(M, ast)
 
-        a0, a1, a2, a3, a4, a5 = [1.15021, -0.0960927, 0.288357, -1.07176, 0.445158, 0.000135345]
-        b0, b1, b2, b3, b4, b5 = [8.1449, 0.464533, -10.3936, 5.47071, -2.18433, -0.0013135]
-        c0, c1, c2, c3, c4, c5 = [-0.549769, 0.321081, -1.60387, 3.74354, -2.05203, -0.000217226]
-    
-        B  = 10.**(a0 + a1*ast + a2*ast**2 + a3*ast**3 + a4*ast**4 + (a5*ast**2)/(ast-1.025)**2)
-        C  = b0 + b1*ast + b2*ast**2 + b3*ast**3 + b4*ast**4 + (b5*ast**2)/(ast-1.025)**2
-        nu = 10.**(c0 + c1*ast + c2*ast**2 + c3*ast**3 + c4*ast**4 + (c5*ast**2)/(ast-1.025)**2)
+    f0 = 10.**gs_f(ast)
 
-        In = g0 * (1. - (1. + exp(-B * log10(abs(z)) - C))**(-nu))
+    z = GM * m 
+
+    if -3.0 < log10(z) < log10(2.5):
         
-    else:
+        In =  gamma_scl_int([ast, log10(z)])[0]  
         
-        In = g0
-    
+    elif  log10(z) < -3.0:
+        
+        In = f0
+
+    else: In = 0.
+
     return In
 
 # Fermion
@@ -699,26 +671,22 @@ def gam_s(M, ast, m):
 def gam_f(M, ast, m):
 
     GM = GN * (M/GeV_in_g) # in GeV^-1
-
-    g12 = 10.**gf_f(ast)
-
-    if m > 0.:
-              
-        z = GM * m # Dimensionless parameter -- gravitational coupling GMm
-
-        a0, a1, a2, a3, a4, a5 = [1.00612, -0.37506, 1.99906, -5.13281, 3.36953, 6.72191e-6]
-        b0, b1, b2, b3, b4, b5 = [7.54615, 1.92532, -18.744, 22.1178, -11.7847, -0.000856291]
-        c0, c1, c2, c3, c4, c5 = [-0.428076, 0.622237, -3.636, 9.10877, -6.23936, 0.000121852]
     
-        B  = 10.**(a0 + a1*ast + a2*ast**2 + a3*ast**3 + a4*ast**4 + (a5*ast**2)/(ast-1.025)**2)
-        C  = b0 + b1*ast + b2*ast**2 + b3*ast**3 + b4*ast**4 + (b5*ast**2)/(ast-1.025)**2
-        nu = 10.**(c0 + c1*ast + c2*ast**2 + c3*ast**3 + c4*ast**4 + (c5*ast**2)/(ast-1.025)**2)
+    TKBH = TBH(M, ast)
 
-        In = g12 * (1. - (1. + exp(-B * log10(abs(z)) - C))**(-nu))        
-                
-    else:
+    f12  = 10.**gf_f(ast)
+
+    z = GM * m 
+
+    if -3.0 < log10(z) < log10(2.5):
         
-        In = g12
+        In =  gamma_fer_int([ast, log10(z)])[0]  
+        
+    elif  log10(z) < -3.0:
+        
+        In = f12
+
+    else: In = 0.
 
     return In
 
@@ -727,27 +695,23 @@ def gam_f(M, ast, m):
 def gam_v(M, ast, m):
 
     GM = GN * (M/GeV_in_g) # in GeV^-1
-
-    g1 = 10.**gv_f(ast)
-
-    if m > 0.:
-              
-        z = GM * m # Dimensionless parameter -- gravitational coupling GMm
-
-        a0, a1, a2, a3, a4, a5 = [1.13229, 0.0350832, -0.413466, 0.621237, -0.699533, 0.0000492522]
-        b0, b1, b2, b3, b4, b5 = [8.76985, -0.732767, -1.61877, -8.23582, 4.28217, -0.000958016]
-        c0, c1, c2, c3, c4, c5 = [-0.519134, -0.0487171, 0.554668, -0.895856, 0.985914, -0.000184225]
     
-        B  = 10.**(a0 + a1*ast + a2*ast**2 + a3*ast**3 + a4*ast**4 + (a5*ast**2)/(ast-1.025)**2)
-        C  = b0 + b1*ast + b2*ast**2 + b3*ast**3 + b4*ast**4 + (b5*ast**2)/(ast-1.025)**2
-        nu = 10.**(c0 + c1*ast + c2*ast**2 + c3*ast**3 + c4*ast**4 + (c5*ast**2)/(ast-1.025)**2)
+    TKBH = TBH(M, ast)
 
-        In = g1 * (1. - (1. + exp(-B * log10(abs(z)) - C))**(-nu))
-                        
-    else:
+    f1 = 10.**gv_f(ast)
+
+    z = GM * m 
+
+    if -3.0 < log10(z) < log10(2.5):
         
-        In = g1
+        In =  gamma_vec_int([ast, log10(z)])[0]  
+        
+    elif  log10(z) < -3.0:
+        
+        In = f1
 
+    else: In = 0.
+    
     return In
 
 # Tensor - spin2
@@ -755,27 +719,23 @@ def gam_v(M, ast, m):
 def gam_g(M, ast, m):
 
     GM = GN * (M/GeV_in_g) # in GeV^-1
-
-    g2 = 10.**gG_f(ast)
-
-    if m > 0.:
-              
-        z = GM * m # Dimensionless parameter -- gravitational coupling GMm
-
-        a0, a1, a2, a3, a4, a5 = [1.29532, 0.0688836, -0.530873, 1.28982, -1.03602, -0.0000330189]
-        b0, b1, b2, b3, b4, b5 = [9.12665, -0.226946, -9.69857, 13.4095, -11.0022, -0.000625013]
-        c0, c1, c2, c3, c4, c5 = [-0.657139, -0.0828605, 0.66564, -1.5549, 1.2225, 0.0000372539]
     
-        B  = 10.**(a0 + a1*ast + a2*ast**2 + a3*ast**3 + a4*ast**4 + (a5*ast**2)/(ast-1.025)**2)
-        C  = b0 + b1*ast + b2*ast**2 + b3*ast**3 + b4*ast**4 + (b5*ast**2)/(ast-1.025)**2
-        nu = 10.**(c0 + c1*ast + c2*ast**2 + c3*ast**3 + c4*ast**4 + (c5*ast**2)/(ast-1.025)**2)
+    TKBH = TBH(M, ast)
 
-        In = g2 * (1. - (1. + exp(-B * log10(abs(z)) - C))**(-nu))
-                                
-    else:
-        In = g2
-        #print(In)
+    f2 = 10.**gG_f(ast)
+
+    z = GM * m 
+
+    if -3.0 < log10(z) < log10(2.5):
         
+        In =  gamma_gra_int([ast, log10(z)])[0]  
+        
+    elif  log10(z) < -3.0:
+        
+        In = f2
+
+    else: In = 0.
+    
     return In
 
 #------------------------------------------#
@@ -791,27 +751,29 @@ def gSM(M, ast):
     fgr =  0.                      # Graviton
     fp  =  gp * gam_v(M, ast, 0.)  # Photon
     fgl = ggl * gam_v(M, ast, 0.6) # Gluon
-    fW  =  gW * gam_v(M, ast, mW)  # W
-    fZ  =  gZ * gam_v(M, ast, mZ)  # Z
-    fH  =  gH * gam_s(M, ast, mH)  # Higgs
+
+
+    # Electrowak dofs
+
+    fGB_aEW = gW_aEW * gam_v(M, ast, 0.)  + gZ_aEW * gam_v(M, ast, 0.)  + gH_aEW * gam_s(M, ast, 0.)  # below EW    
+
+    fGB_bEW = gW * gam_v(M, ast, mW)  + gZ * gam_v(M, ast, mZ)  + gH * gam_s(M, ast, mH)  # below EW
+
+    fGB = 0.5*(fGB_aEW + fGB_bEW + (fGB_aEW - fGB_bEW)*tanh((T-TEW)/10.))
+
 
     fnu = 3. * gnu * gam_f(M, ast, 0.)                           # Active neutrinos
     
     fl  = gl * (gam_f(M, ast, me) + gam_f(M, ast, mmu) + gam_f(M, ast, mtau))  # Charged leptons
-    
-    fq  = gq * (gam_f(M, ast, mu) + gam_f(M, ast, md) + gam_f(M, ast, ms) +
-                gam_f(M, ast, mc) + gam_f(M, ast, mb) + gam_f(M, ast, mt))    # Quarks
-    
-    if T >= LQCD:
 
-        fq  = gq * (gam_f(M, ast, mu) + gam_f(M, ast, md) + gam_f(M, ast, ms) +
-                    gam_f(M, ast, mc) + gam_f(M, ast, mb) + gam_f(M, ast, mt))    # Quarks
-        
-    else: # Below Lambda_QCD we only include pions
+    fq_aLQCD  = gq * (gam_f(M, ast, mu) + gam_f(M, ast, md) + gam_f(M, ast, ms) +
+                      gam_f(M, ast, mc) + gam_f(M, ast, mb) + gam_f(M, ast, mt))    # Quarks
 
-        fq = g_pi0 * gam_s(M, ast, m_pi0) + g_pi0 * gam_s(M, ast, m_pi0)
+    fq_bLQCD  = g_pi0 * gam_s(M, ast, m_pi0) + g_pi0 * gam_s(M, ast, m_pi0)
 
-    return fgr + fp + fnu + fgl + fW + fZ + fH + fl + fq
+    fq = 0.5*(fq_aLQCD + fq_bLQCD + (fq_aLQCD - fq_bLQCD)*tanh((T-LQCD)/f_QCD))
+
+    return fgr + fp + fnu + fgl + fGB + fl + fq
 
 def gSM_test(M, ast):
 
@@ -895,9 +857,14 @@ def gSM_nu(M, ast, m0):
     fgr =  0.                      # Graviton
     fp  =  gp * gam_v(M, ast, 0.)  # Photon
     fgl = ggl * gam_v(M, ast, 0.6) # Gluon
-    fW  =  gW * gam_v(M, ast, mW)  # W
-    fZ  =  gZ * gam_v(M, ast, mZ)  # Z
-    fH  =  gH * gam_s(M, ast, mH)  # Higgs
+
+    # Electrowak dofs
+
+    fGB_aEW = gW_aEW * gam_v(M, ast, 0.)  + gZ_aEW * gam_v(M, ast, 0.)  + gH_aEW * gam_s(M, ast, 0.)  # below EW    
+
+    fGB_bEW = gW * gam_v(M, ast, mW)  + gZ * gam_v(M, ast, mZ)  + gH * gam_s(M, ast, mH)  # below EW
+
+    fGB = 0.5*(fGB_aEW + fGB_bEW + (fGB_aEW - fGB_bEW)*tanh((T-TEW)/10.))
 
     # Neutrino masses, assuming Normal Ordering, in GeV
 
@@ -908,17 +875,17 @@ def gSM_nu(M, ast, m0):
     fnu = gnu * (gam_f(M, ast, m1) + gam_f(M, ast, m2) + gam_f(M, ast, m3)) # Active Majorana neutrinos
     
     fl  = gl * (gam_f(M, ast, me) + gam_f(M, ast, mmu) + gam_f(M, ast, mtau))  # Charged leptons
-    
-    if T >= LQCD:
-    
-        fq  = gq * (gam_f(M, ast, mu) + gam_f(M, ast, md) + gam_f(M, ast, ms) +
-                    gam_f(M, ast, mc) + gam_f(M, ast, mb) + gam_f(M, ast, mt))    # Quarks
-        
-    else: # Below Lambda_QCD we only include pions
 
-        fq = g_pi0 * gam_s(M, ast, m_pi0) + g_pi0 * gam_s(M, ast, m_pi0)
+    # QCD dofs
 
-    return fgr + fp + fnu + fgl + fW + fZ + fH + fl + fq
+    fq_aLQCD  = gq * (gam_f(M, ast, mu) + gam_f(M, ast, md) + gam_f(M, ast, ms) +
+                      gam_f(M, ast, mc) + gam_f(M, ast, mb) + gam_f(M, ast, mt))    # Quarks
+
+    fq_bLQCD  = g_pi0 * gam_s(M, ast, m_pi0) + g_pi0 * gam_s(M, ast, m_pi0)
+
+    fq = 0.5*(fq_aLQCD + fq_bLQCD + (fq_aLQCD - fq_bLQCD)*tanh((T-LQCD)/f_QCD))
+
+    return fgr + fp + fnu + fgl + fGB + fl + fq
 
 
 def gRH(M, ast, mRH): return gnu * gam_f(M, ast, mRH)
@@ -982,14 +949,14 @@ def gSM_DS(M, ast, L_DS):
 
     T = TBH(M, ast)
 
-    # Electroweak + QCD gauge bosons + Higgs dofs
-    fv = (gW + gZ + gH + ggl + gp) * gam_v(M, ast, L_DS) 
+    # Electroweak + QCD gauge bosons dofs
+    fv = (gW_aEW + gZ_aEW + ggl + gp) * gam_v(M, ast, L_DS) 
     
     # Higgs 
-    fs = gH * gam_s(M, ast, L_DS)
+    fs = gH_aEW * gam_s(M, ast, L_DS)
 
     # Fermions
-    ff = (gnu + gl + gq) * gam_f(M, ast, L_DS) 
+    ff = gf * gam_f(M, ast, L_DS) 
 
     # Graviton
 
@@ -1023,55 +990,46 @@ def sg(astar): return (-4.186144418797312 + 0.0005940192025746495*astar + 7.6060
 def zet_s(M, ast, m):
 
     GM = GN * (M/GeV_in_g) # in GeV^-1
-
-    z0 = 10.**ss(ast)
     
-    if m > 0.:
-              
-        z = GM * m # Dimensionless parameter -- gravitational coupling GMm
+    TKBH = TBH(M, ast)
 
-        a0, a1, a2, a3, a4, a5 = [0.862639, -0.299957, 2.03926, -5.87951, 4.30497, -0.000188365]
-        b0, b1, b2, b3, b4, b5 = [6.88522, -0.294533, -2.75879, -4.66752, 2.47259, -0.00048632]
-        c0, c1, c2, c3, c4, c5 = [-0.378201, -0.389578, 1.53331, 0.31072, -1.85282, 0.000361938]
-    
-        B  = 10.**(a0 + a1*ast + a2*ast**2 + a3*ast**3 + a4*ast**4 + (a5*ast**2)/(ast-1.025)**2)
-        C  = b0 + b1*ast + b2*ast**2 + b3*ast**3 + b4*ast**4 + (b5*ast**2)/(ast-1.025)**2
-        nu = 10.**(c0 + c1*ast + c2*ast**2 + c3*ast**3 + c4*ast**4 + (c5*ast**2)/(ast-1.025)**2)
+    f0 = 10.**ss(ast)
 
-        In = z0 * (1. - (1. + exp(-B * log10(abs(z)) - C))**(-nu))
+    z = GM * m 
+
+    if -3.0 < log10(z) < log10(2.5):
         
-    else:
+        In =  zeta_scl_int([ast, log10(z)])[0]  
         
-        In = z0
+    elif  log10(z) < -3.0:
+        
+        In = f0
+
+    else: In = 0.
 
     return In
-    
 
 # Fermion
 
 def zet_f(M, ast, m):
 
     GM = GN * (M/GeV_in_g) # in GeV^-1
-
-    z12 = 10.**sf(ast)
     
-    if m > 0.:
-              
-        z = GM * m # Dimensionless parameter -- gravitational coupling GMm
+    TKBH = TBH(M, ast)
 
-        a0, a1, a2, a3, a4, a5 = [0.99758, -0.00576664, -0.210207, 0.222121, -0.472107, 0.000171936]
-        b0, b1, b2, b3, b4, b5 = [7.93571, 0.147245, -5.77358, 1.87751, -1.77874, -0.00124554]
-        c0, c1, c2, c3, c4, c5 = [-0.455288, 0.369066, -1.85025, 3.77071, -1.82242, -0.000266735]
+    f12  = 10.**sf(ast)
+
+    z = GM * m 
+
+    if -3.0 < log10(z) < log10(2.5):
+        
+        In =  zeta_fer_int([ast, log10(z)])[0]  
+        
+    elif  log10(z) < -3.0:
+        
+        In = f12
     
-        B  = 10.**(a0 + a1*ast + a2*ast**2 + a3*ast**3 + a4*ast**4 + (a5*ast**2)/(ast-1.025)**2)
-        C  = b0 + b1*ast + b2*ast**2 + b3*ast**3 + b4*ast**4 + (b5*ast**2)/(ast-1.025)**2
-        nu = 10.**(c0 + c1*ast + c2*ast**2 + c3*ast**3 + c4*ast**4 + (c5*ast**2)/(ast-1.025)**2)
-
-        In = z12 * (1. - (1. + exp(-B * log10(abs(z)) - C))**(-nu))
-        
-    else:
-        
-        In = z12
+    else:  In = 0.
 
     return In
 
@@ -1080,26 +1038,22 @@ def zet_f(M, ast, m):
 def zet_v(M, ast, m):
 
     GM = GN * (M/GeV_in_g) # in GeV^-1
-
-    z1 = 10.**sv(ast)
     
-    if m > 0.:
-              
-        z = GM * m # Dimensionless parameter -- gravitational coupling GMm
+    TKBH = TBH(M, ast)
 
-        a0, a1, a2, a3, a4, a5 = [1.10223, 0.0719912, -0.600077, 1.24585, -1.07814, -0.0000373172]
-        b0, b1, b2, b3, b4, b5 = [8.50988, -0.665385, -3.27291, 0.264623, -2.10992, -0.000491667]
-        c0, c1, c2, c3, c4, c5 = [-0.50167, -0.143651, 1.07013, -2.16797, 1.72439, -5.71712e-6]
-    
-        B  = 10.**(a0 + a1*ast + a2*ast**2 + a3*ast**3 + a4*ast**4 + (a5*ast**2)/(ast-1.025)**2)
-        C  = b0 + b1*ast + b2*ast**2 + b3*ast**3 + b4*ast**4 + (b5*ast**2)/(ast-1.025)**2
-        nu = 10.**(c0 + c1*ast + c2*ast**2 + c3*ast**3 + c4*ast**4 + (c5*ast**2)/(ast-1.025)**2)
+    f1 = 10.**sv(ast)
 
-        In = z1 * (1. - (1. + exp(-B * log10(abs(z)) - C))**(-nu))
+    z = GM * m 
+
+    if -3.0 < log10(z) < log10(2.5):
         
-    else:
+        In =  zeta_vec_int([ast, log10(z)])[0]  
         
-        In = z1
+    elif  log10(z) < -3.0:
+        
+        In = f1
+
+    else:  In = 0.
     
     return In
 
@@ -1108,27 +1062,23 @@ def zet_v(M, ast, m):
 def zet_g(M, ast, m):
 
     GM = GN * (M/GeV_in_g) # in GeV^-1
-
-    z2 = 10.**sg(ast)
     
-    if m > 0.:
-              
-        z = GM * m # Dimensionless parameter -- gravitational coupling GMm
+    TKBH = TBH(M, ast)
 
-        a0, a1, a2, a3, a4, a5 = [ 1.25678, 0.0942764, -0.548557, 1.26598, -1.02362, -0.0000456537]
-        b0, b1, b2, b3, b4, b5 = [ 8.69785, -0.611793, -8.11752, 10.8511, -9.2552, -0.000559518]
-        c0, c1, c2, c3, c4, c5 = [-0.622981, -0.115483, 0.709105, -1.57263, 1.22883, 0.0000458349]
+    f2 = 10.**sg(ast)
+
+    z = GM * m 
+
+    if -3.0 < log10(z) < log10(2.5):
+        
+        In =  zeta_gra_int([ast, log10(z)])[0] 
+        
+    elif  log10(z) < -3.0:
+        
+        In = f2
+
+    else:  In = 0.
     
-        B  = 10.**(a0 + a1*ast + a2*ast**2 + a3*ast**3 + a4*ast**4 + (a5*ast**2)/(ast-1.025)**2)
-        C  = b0 + b1*ast + b2*ast**2 + b3*ast**3 + b4*ast**4 + (b5*ast**2)/(ast-1.025)**2
-        nu = 10.**(c0 + c1*ast + c2*ast**2 + c3*ast**3 + c4*ast**4 + (c5*ast**2)/(ast-1.025)**2)
-
-        In = z2 * (1. - (1. + exp(-B * log10(abs(z)) - C))**(-nu))
-        
-    else:
-        
-        In = z2
-
     return In
 
 #------------------------------------------#
@@ -1144,25 +1094,30 @@ def zSM(M, ast):
     fgr =  0.
     fp  =  gp * zet_v(M, ast, 0.)  # Photon
     fgl = ggl * zet_v(M, ast, 0.6) # Gluon
-    fW  =  gW * zet_v(M, ast, mW)  # W
-    fZ  =  gZ * zet_v(M, ast, mZ)  # Z
-    fH  =  gH * zet_s(M, ast, mH)  # Higgs
+    
+    # Electrowak dofs
+
+    fGB_aEW = gW_aEW * zet_v(M, ast, mW)  + gZ_aEW * zet_v(M, ast, 0.)  + gH_aEW * zet_s(M, ast, 0.)  # below EW    
+
+    fGB_bEW = gW * zet_v(M, ast, mW)  + gZ * zet_v(M, ast, mZ)  + gH * zet_s(M, ast, mH)  # below EW
+
+    fGB = 0.5*(fGB_aEW + fGB_bEW + (fGB_aEW - fGB_bEW)*tanh((T-TEW)/10.))
 
     fnu = 3. * gnu * zet_f(M, ast, 0.) # Active neutrinos
     
     fl  = gl * (zet_f(M, ast, me) + zet_f(M, ast, mmu) + zet_f(M, ast, mtau))  # Charged leptons
-    
-    if T >= LQCD:
-    
-        fq  = gq * (zet_f(M, ast, mu) + zet_f(M, ast, md) + zet_f(M, ast, ms) +
-                    zet_f(M, ast, mc) + zet_f(M, ast, mb) + zet_f(M, ast, mt))    # Quarks
-        
-    else: # Below Lambda_QCD we only include pions
 
-        fq = g_pi0 * zet_s(M, ast, m_pi0) + g_pi0 * zet_s(M, ast, m_pi0)
+    # QCD dofs
+
+    fq_aLQCD  = gq * (zet_f(M, ast, mu) + zet_f(M, ast, md) + zet_f(M, ast, ms) +
+                      zet_f(M, ast, mc) + zet_f(M, ast, mb) + zet_f(M, ast, mt))    # Quarks
+
+    fq_bLQCD  = g_pi0 * zet_s(M, ast, m_pi0) + g_pi0 * zet_s(M, ast, m_pi0)
+
+    fq = 0.5*(fq_aLQCD + fq_bLQCD + (fq_aLQCD - fq_bLQCD)*tanh((T-LQCD)/f_QCD))
 
     
-    return fgr + fp + fnu + fgl + fW + fZ + fH + fl + fq
+    return fgr + fp + fnu + fgl + fGB + fl + fq
 
 #--------------------------------------------------------------#
 #              SM Contribution + massive neutrinos             #
@@ -1177,9 +1132,14 @@ def zSM_nu(M, ast, m0):
     fgr =  0.
     fp  =  gp * zet_v(M, ast, 0.)  # Photon
     fgl = ggl * zet_v(M, ast, 0.6) # Gluon
-    fW  =  gW * zet_v(M, ast, mW)  # W
-    fZ  =  gZ * zet_v(M, ast, mZ)  # Z
-    fH  =  gH * zet_s(M, ast, mH)  # Higgs
+    
+    # Electrowak dofs
+
+    fGB_aEW = gW_aEW * zet_v(M, ast, mW)  + gZ_aEW * zet_v(M, ast, 0.)  + gH_aEW * zet_s(M, ast, 0.)  # below EW    
+
+    fGB_bEW = gW * zet_v(M, ast, mW)  + gZ * zet_v(M, ast, mZ)  + gH * zet_s(M, ast, mH)  # below EW
+
+    fGB = 0.5*(fGB_aEW + fGB_bEW + (fGB_aEW - fGB_bEW)*tanh((T-TEW)/10.))   
 
     # Neutrino masses, assuming Normal Ordering, in GeV
 
@@ -1190,20 +1150,15 @@ def zSM_nu(M, ast, m0):
     fnu = gnu * (zet_f(M, ast, m1) + zet_f(M, ast, m2) + zet_f(M, ast, m3)) # Active Majorana neutrinos
     
     fl  = gl * (zet_f(M, ast, me) + zet_f(M, ast, mmu) + zet_f(M, ast, mtau))  # Charged leptons
-    
-    if T >= LQCD:
-    
-        fq  = gq * (zet_f(M, ast, mu) + zet_f(M, ast, md) + zet_f(M, ast, ms) +
-                    zet_f(M, ast, mc) + zet_f(M, ast, mb) + zet_f(M, ast, mt))    # Quarks
-        
-    else: # Below Lambda_QCD we only include pions
 
-        fq = g_pi0 * zet_s(M, ast, m_pi0) + g_pi0 * zet_s(M, ast, m_pi0)
+    fq_aLQCD  = gq * (zet_f(M, ast, mu) + zet_f(M, ast, md) + zet_f(M, ast, ms) +
+                      zet_f(M, ast, mc) + zet_f(M, ast, mb) + zet_f(M, ast, mt))    # Quarks
 
-    
-    return fgr + fp + fnu + fgl + fW + fZ + fH + fl + fq
+    fq_bLQCD  = g_pi0 * zet_s(M, ast, m_pi0) + g_pi0 * zet_s(M, ast, m_pi0)
 
+    fq = 0.5*(fq_aLQCD + fq_bLQCD + (fq_aLQCD - fq_bLQCD)*tanh((T-LQCD)/f_QCD))
 
+    return fgr + fp + fnu + fgl + fGB + fl + fq
 
 # RH neutrino contribution
 
@@ -1266,14 +1221,14 @@ def zSM_DS(M, ast, L_DS):
 
     T = TBH(M, ast)
 
-    # Electroweak + QCD gauge bosons + Higgs dofs
-    fv = (gW + gZ + gH + ggl + gp) * zet_v(M, ast, L_DS) 
+    # Electroweak + QCD gauge bosons  dofs
+    fv = (gW_aEW + gZ_aEW  + ggl + gp) * zet_v(M, ast, L_DS) 
     
     # Higgs 
-    fs = gH * zet_s(M, ast, L_DS)
+    fs = gH_aEW * zet_s(M, ast, L_DS)
 
     # Fermions
-    ff = (gnu + gl + gq) * zet_f(M, ast, L_DS) 
+    ff = gf * zet_f(M, ast, L_DS) 
 
     # Graviton
 
@@ -1391,10 +1346,43 @@ def Itau_NSC(tl, v, Nscls): # Dark Radiation Case
     GNS = Nscls * gam_s(M, ast, 0.) # N scalars evaporation contribution
     GT  = GSM + GNS                 # Total Evaporation contribution
 
-    dMdtl   = - log(10.) * 10.**tl * FT/(GN**2 * M_GeV**2)
-    dastdtl = - log(10.) * 10.**tl * ast * (GT - 2.*FT)/(GN**2 * M_GeV**3)
+    dMdtl   = - FT/(GN**2 * M_GeV**2)
+    dastdtl = - ast * (GT - 2.*FT)/(GN**2 * M_GeV**3)
 
-    return [GeV_in_g * dMdtl, dastdtl]
+    Jac = log(10.) * 10.**tl
+
+    return Jac*np.array([GeV_in_g * dMdtl, dastdtl])
+
+def Itau_NSC_entropy(tl, v, Nscls): # Dark Radiation Case
+    
+    M   = v[0]  # BH mass in GeV
+    ast = v[1]
+    SBH = v[2]
+    SRD = v[3]
+
+    M_GeV = M/GeV_in_g
+
+    FSM = fSM(M, ast) + gg * phi_g(M, ast, 0.)  # Including gravitons
+    FNS = Nscls * phi_s(M, ast, 0.) # N scalars evaporation contribution
+    FT  = FSM + FNS                 # Total Evaporation contribution
+
+    GSM = gSM(M, ast) + gg * gam_g(M, ast, 0.)  # Including gravitons
+    GNS = Nscls * gam_s(M, ast, 0.) # N scalars evaporation contribution
+    GT  = GSM + GNS                 # Total Evaporation contribution
+
+    ZSM = zSM(M, ast) + 2.0 * zet_g(M, ast, 0.) # SM + graviton contribution
+    ZNS = Nscls * zet_s(M, ast, 0.) # N scalars evaporation contribution
+    ZT  = ZSM + ZNS                 # Total Evaporation contribution
+
+    dMdtl   = - FT/(GN**2 * M_GeV**2)
+    dastdtl = - ast * (GT - 2.*FT)/(GN**2 * M_GeV**3)
+
+    dSBHdtl   = - 2. * pi * (2.*FT + (2.*FT - ast**2 * GT)/sqrt(1. - ast**2))/(GN * M_GeV)
+    dSRaddtl  =   ZT/(GN * M_GeV)
+
+    Jac = log(10.) * 10.**tl
+
+    return Jac*np.array([GeV_in_g * dMdtl, dastdtl, dSBHdtl, dSRaddtl])
 
 def Itau_NSC_DR(tl, v, s, Nscls): # Dark Radiation Case
     
@@ -1424,7 +1412,7 @@ def ItauDR_MB(tl, v, s, k): # Dark Radiation Case
 
     M_GeV = (M/GeV_in_g) # PBH mass in GeV
 
-    S_BH = 4.*pi*GN*M_GeV**2 # PBH entropy
+    S_BH = 2.*pi*GN*M_GeV**2*(1. + sqrt(1. - ast**2)) # PBH entropy
 
     FSM = fSM(M, ast)
     FDR = fDR(M, ast, s) # DM evaporation contribution
@@ -1458,9 +1446,6 @@ def afin(aexp, rPBHi, rRadi, t, ail):
 #-------------------------------------------------------------------------------------------------#
 #                                   g*(T) and g*S(T) interpolation                                #
 #-------------------------------------------------------------------------------------------------#
-import os
-path, filename = os.path.split(os.path.realpath(__file__))
-
 datg  = os.path.join(path, "data/gstar.dat")
 datgS = os.path.join(path, "data/gstarS.dat")
 
@@ -1523,7 +1508,7 @@ Kgtab = np.loadtxt(sg_K_dir, delimiter=" ")
 sig_Ks = interpolate.RegularGridInterpolator((Etab, atab), abs(Kstab.T), bounds_error=False, fill_value = None)#RectBivariateSpline(atab, Etab, Kstab)
 sig_Kf = interpolate.RegularGridInterpolator((Etab, atab), abs(Kftab.T), bounds_error=False, fill_value = None)#RectBivariateSpline(atab, Etab, Kftab)
 sig_Kv = interpolate.RegularGridInterpolator((Etab, atab), abs(Kvtab.T), bounds_error=False, fill_value = None)#RectBivariateSpline(atab, Etab, Kvtab)
-sig_Kg = interpolate.RegularGridInterpolator((Etab, atab), abs(Kgtab.T), bounds_error=False, fill_value=0.) #RectBivariateSpline(atab, Etab, Kgtab)
+sig_Kg = interpolate.RegularGridInterpolator((Etab, atab), abs(Kgtab.T), bounds_error=False, fill_value = 0.) #RectBivariateSpline(atab, Etab, Kgtab)
     
 #-------------------------------#
 #            Scalars            #
@@ -1535,7 +1520,7 @@ def d2Ns_dpdt(p, MBH, ast): # p in GeV, MBH in g
     x    = GN * (MBH/GeV_in_g) * p
     TBHK = TBH(MBH, ast)
 
-    return sig_Ks(x, ast)
+    return sig_Ks([x, ast])[0]
 
 #---------------------------------------#
 #           Massless Fermion            #
@@ -1547,11 +1532,39 @@ def d2Nf_dpdt(p, MBH, ast): # p in GeV, MBH in g
     x    = GN * (MBH/GeV_in_g) * p
     TBHK = TBH(MBH, ast)
  
-    return sig_Kf(x, ast)
+    return sig_Kf([x, ast])[0]
 
 #---------------------------------------#
 #            Massive Fermion            #
 #---------------------------------------#  
+
+
+dat_sigf  = os.path.join(path, "data/absxsec/sigma_s_0.5.dat")
+sigf_0_Tab  = np.loadtxt(dat_sigf)
+
+etab   = sigf_0_Tab[:,0]
+sf0tab = sigf_0_Tab[:,1]
+sf0_int = interpolate.splrep(etab, sf0tab, s=0)
+
+def sigma_f_0(x): return interpolate.splev(x, sf0_int, der=0) # Absorption cross section for massless fermions
+
+def sigma_f_LE(x,mu):
+    '''
+        Low energy limit of absorption cross section, taken from PRD71(2005)124020
+    '''
+
+    u = sqrt(x*x/(x*x + mu*mu)) # velocity
+
+    return (4*pi*pi*(1+u*u)*mu)/(u*u*sqrt(1-u*u)*(1 - exp(-2*pi*mu*(1+u*u)/(u*sqrt(1-u*u))))) # 
+
+def sigma_f_HE(x,mu):
+    '''
+        High energy limit of absorption cross section, taken from PRD18(1978)1798, PRD71(25005)124020
+    '''
+    u = sqrt(x*x/(x*x + mu*mu)) # velocity
+
+    return (pi/(2*u**4)) * (8*u**4 + 20*u*u - 1 + sqrt((1+8*u*u)**3)) 
+
 
 x_dir = os.path.join(path, "data/absxsec/sigma_m_0.5_x.dat")
 m_dir = os.path.join(path, "data/absxsec/sigma_m_0.5_m.dat")   
@@ -1565,16 +1578,42 @@ Emtab = np.loadtxt(x_dir, delimiter="\t")
 G05m  = interpolate.RegularGridInterpolator((Emtab, mtab), abs(G05mtab.T), bounds_error=False, fill_value=0.)
 
 def d2Nmf_dpdt(p, MBH, ast, m): # p in GeV, MBH in g, m in GeV
+    
     fact = (MBH/GeV_in_g)
     x    = GN * fact * p # Dimensionless momentum ->  x = G*MBH*p
     mu   = GN * fact * m # Dimensionless mass     -> mu = G*MBH*m
     GM   = GN * MBH/GeV_in_g
     TBHK = TBH(MBH, ast)
 
-    if(m > 0. and ast == 0.):
-        return 0.159154943*(G05m(x, mu)[0]*(GM*p)**2/(np.exp(np.sqrt(p*p + m*m)/TBHK) + 1.))
+    if mu > 0. and ast == 0.:
+
+        Gfm = 0.
+
+        if mu < 0.01:
+
+            if 0 <= x <= 1: Gfm = pi*sigma_f_0(x)
+            
+            else: Gfm = 27*pi*(1. - sqrt(1./(sqrt(27)*pi))*jv(2.5, 2.*sqrt(27.)*pi*x))
+
+        elif 0.01 <= mu <= 1.0:
+
+            if x < 1.e-15: Gfm = sigma_f_LE(x,mu)
+            
+            elif 1.e-15 <= x <= 1.9: Gfm = pi*G05m([x, mu])[0]
+
+            else: Gfm = sigma_f_HE(x,mu) * (1. - sqrt(x/(2*sqrt(27)*(2*x*x + mu*mu)))*jv(2.5-0.35*mu+2.55*mu*mu, sqrt(27.)*pi*mu*(mu/x + 2*x/mu)))
+
+        else: Gfm = sigma_f_HE(x,mu)
+
+        return (Gfm*(GM*p)**2/(np.exp(np.sqrt(p*p + m*m)/TBHK) + 1.))/(2*pi*pi)
+    
     else:
-        return sig_Kf(x, ast)
+        return sig_Kf([x, ast])[0]
+
+    # if(m > 0. and ast == 0.):
+    #     return 0.159154943*(G05m([x, mu])[0]*(GM*p)**2/(np.exp(np.sqrt(p*p + m*m)/TBHK) + 1.))
+    # else:
+    #     return sig_Kf([x, ast])[0]
 
 #-------------------------------#
 #            Vectors            #
@@ -1584,19 +1623,8 @@ def d2Nv_dpdt(p, MBH, ast): # p in GeV, MBH in g
 
     x    = GN * (MBH/GeV_in_g) * p
     TBHK = TBH(MBH, ast)
-
-    return sig_Kv(x, ast)
-
-#-------------------------------#
-#            Vectors            #
-#-------------------------------#
-
-def d2Nmv_dpdt(p, MBH, ast, m): # p in GeV, MBH in g
-
-    x    = GN * (MBH/GeV_in_g) * p
-    TBHK = TBH(MBH, ast)
  
-    return sig_Kv(x, ast)
+    return sig_Kv([x, ast])[0]
 
 #-------------------------------#
 #           Graviton            #
@@ -1607,4 +1635,4 @@ def d2Ng_dpdt(p, MBH, ast): # p in GeV, MBH in g
     x    = GN * (MBH/GeV_in_g) * p
     TBHK = TBH(MBH, ast)
 
-    return sig_Kg(x, ast)[0]
+    return sig_Kg([x, ast])[0]
