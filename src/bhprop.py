@@ -1496,9 +1496,6 @@ def dgstarSdT(T): return interpolate.splev(T, tckS, der = 1)
 #             Tables --  Kerr BHs                 #
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 
-# at = os.path.join(path, "data/absxsec/sigma_K_a.dat")
-# Et = os.path.join(path, "data/absxsec/sigma_K_E.dat")
-
 at = os.path.join(path, "data/absxsec/a_array.txt")
 Et = os.path.join(path, "data/absxsec/w_array.txt")
 
@@ -1514,11 +1511,6 @@ Kstab = np.loadtxt(ss_K_dir, delimiter=" ")
 Kftab = np.loadtxt(sf_K_dir, delimiter=" ")
 Kvtab = np.loadtxt(sv_K_dir, delimiter=" ")
 Kgtab = np.loadtxt(sg_K_dir, delimiter=" ")
-
-# sig_Ks = interpolate.interp2d(Etab, atab, abs(Kstab), kind='linear', bounds_error=False, fill_value=0.)#RectBivariateSpline(atab, Etab, Kstab)
-# sig_Kf = interpolate.interp2d(Etab, atab, abs(Kftab), kind='linear', bounds_error=False, fill_value=0.)#RectBivariateSpline(atab, Etab, Kftab)
-# sig_Kv = interpolate.interp2d(Etab, atab, abs(Kvtab), kind='linear', bounds_error=False, fill_value=0.)#RectBivariateSpline(atab, Etab, Kvtab)
-# sig_Kg = interpolate.interp2d(Etab, atab, abs(Kgtab), kind='linear', bounds_error=False, fill_value=0.) #RectBivariateSpline(atab, Etab, Kgtab)
 
 sig_Ks = interpolate.RegularGridInterpolator((Etab, atab), abs(Kstab.T), bounds_error=False, fill_value = None)#RectBivariateSpline(atab, Etab, Kstab)
 sig_Kf = interpolate.RegularGridInterpolator((Etab, atab), abs(Kftab.T), bounds_error=False, fill_value = None)#RectBivariateSpline(atab, Etab, Kftab)
