@@ -6,22 +6,21 @@ This package provides the solution of the Friedmann - Boltzmann equations for Pr
 We consider the collapse of density fluctuations as the PBH formation mechanism.
 We provide codes for monochromatic and extended mass and spin distributions.
 
+To run the codes, type:
+```
+python3 -m folder.file
+```
+where folder corresponds to the folder where the file is. Note that it is not necessary to type the .py
 
 #### Dark Radiation
 
-The main classes in the folder DNeff return the full evolution of the PBH, SM and Dark Radiation comoving energy densities,
+The main classes in the folder ```dneff``` return the full evolution of the PBH, SM and Dark Radiation comoving energy densities,
 together with the evolution of the PBH mass and spin as function of the $\log_{10}$ @ scale factor.
 The program "mono.py" assumes a monochromatic distribution, "massdist.py" considers mass distributions only --valid only for Schwarzschild PBHs--, 
 and "spinmassdist.py" considers extended distributions in both mass and spin.
 
 The example script "ex_mono.py" containts the final determination of DNeff depending on the model parameters for the monochromatic scenario.
 "ex_massDist.py" and "ex_spinmassdist.py" determine DNeff for extended mass and mass & spin distributions, respectively.
-
-To run the codes, type:
-```
-python3 -m folder.file
-```
-where folder corresponds to the folder where the file is. Note that it is not necessary to type the .py
 
 #### Dark Matter
 
