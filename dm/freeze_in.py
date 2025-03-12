@@ -319,7 +319,7 @@ def p_average_med(Mi, asi, MX, tau, Sol_t):
 def Is_DM_hot(Mi, asi, MDM, tau, Sol_t, Tev, NDMp, NDMbh): #NDMp and NDMbh are the values of the number densities at T=T0
     
     #extract the limits from data file (extracted from 1706.03118 Fig. 6)
-    path_src = path.replace("darkmatter","src")
+    path_src = path.replace("dm","src")
     lim_f_WDM_Tab = pd.read_table(path_src+"/data/lim_f_WDM_new.dat",  names=['x','lim_f_WDM'])
     
     # x = ( keV / MDM )
