@@ -14,7 +14,7 @@ where folder corresponds to the folder where the file is. Note that it is not ne
 
 ### SM evolution including determination of Bekenstein-Hawking \mathtt{BH} and von Neumann Hawking radiation entropies
 
-In the folder ```smcase```, we include the program ```soleqs.py``` that computes the evolution of PBH parameter, specifically mass and spin, SM radiation comoving densities together with the evolution of the \mathtt{BH} and von Neumann Hawking radiation entropies. 
+In the folder ```smcase```, we include the program ```soleqs.py``` that computes the evolution of PBH parameters, specifically mass and spin, its energy density, SM radiation comoving density together with the evolution of the \mathtt{BH} and von Neumann Hawking radiation entropies. 
 The example script to use the main class is called ```ex_sol.py```.
 If the user wants to stop the evolution at the Page time, they would need to change the boolean variable to
 ```
