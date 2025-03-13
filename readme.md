@@ -12,7 +12,7 @@ python3 -m folder.file
 ```
 where folder corresponds to the folder where the file is. Note that it is not necessary to type the .py
 
-#### SM evolution including determination of Bekenstein-Hawking \mathtt{BH} and von Neumann Hawking radiation entropies
+### SM evolution including determination of Bekenstein-Hawking \mathtt{BH} and von Neumann Hawking radiation entropies
 
 In the folder ```smcase```, we include the program ```soleqs.py``` that computes the evolution of PBH parameter, specifically mass and spin, SM radiation comoving densities together with the evolution of the \mathtt{BH} and von Neumann Hawking radiation entropies. 
 The example script to use the main class is called ```ex_sol.py```.
@@ -22,7 +22,7 @@ end_evol_at_Pagetime = True
 ```
 
 
-#### Dark Radiation
+### Dark Radiation
 
 The main classes in the folder ```dneff``` return the full evolution of the PBH, SM and Dark Radiation comoving energy densities,
 together with the evolution of the PBH mass and spin as function of the $\log_{10}$ @ scale factor.
@@ -31,7 +31,7 @@ The program ```mono.py``` assumes a monochromatic distribution, ```massdist.py``
 The example script ```ex_mono.py``` containts the final determination of DNeff depending on the model parameters for the monochromatic scenario.
 ```ex_massDist.py``` and ```ex_spinmassdist.py``` determine DNeff for extended mass and mass & spin distributions, respectively.
 
-#### Dark Matter
+### Dark Matter
 
 The main classes in in the folder ```dm``` contain the determination the relic abundance in the case of Dark Matter produced from BH evaporation for monochromatic and extended distributions.
 The program ```mono.py``` assumes a monochromatic distribution, ```massdist.py``` considers mass distributions only --valid only for Schwarzschild PBHs--, and ```spinmassdist.py``` considers extended distributions in both mass and spin.
