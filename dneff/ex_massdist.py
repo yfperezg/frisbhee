@@ -81,7 +81,7 @@ Dis_types = {0:"LN", 1:"PL", 2:"CC", 3:"MP"}
 
 SolDR_m = FBEqs_Sol(Mi, asi, bi, sDR)
 
-xm, tm, MBHm, astm, Radm, PBHm, TUnm, DRadm  = SolDR_m.Solt()
+xm, tm, MBHm, astm, SBHm, SRDm, Radm, PBHm, TUnm, DRadm  = SolDR_m.Solt()
 
 #+++++++++++++++++++++++++++++#
 #       Mass Distribution     #

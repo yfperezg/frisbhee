@@ -76,7 +76,7 @@ start = time.time()
 
 Oh2m = FBEqs_Sol(Mi, asi, bi, mDM, sDM)
 
-xm, tm, MBHm, astm, Radm, PBHm, TUnm, NDBEm, Tevm  = Oh2m.Solt()
+xm, tm, MBHm, astm, SBHm, SRDm, Radm, PBHm, TUnm, NDBEm, Tevm  = Oh2m.Solt()
 
 end = time.time()
 

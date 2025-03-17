@@ -23,6 +23,8 @@ from scipy.interpolate import interp1d, RectBivariateSpline
 
 from math import sqrt, log, exp, log10, pi, atan
 
+from termcolor import colored
+
 from src import bhprop as bh #Schwarzschild and Kerr BHs library 
 
 from src.integrator import Simp1D
@@ -73,6 +75,12 @@ def StopMass(t, v, Mi):
 
     return v[0] - Mst # Function to stop the solver if the BH is equal or smaller than the Planck mass
 
+def SBH_Rad_eq(a, v):
+
+    SBH   = v[2] # PBH Bekenstein-Hawking entropy
+    SRad  = v[3] # PBH Radiation entropy
+    
+    return SBH - SRad # Function to find PBH - Radiation entropy equality
 
 #----------------------------------------------------#
 #                Mediator decay width                #
@@ -306,8 +314,8 @@ def p_average_med(Mi, asi, MX, tau, Sol_t):
 
     pars = [MX, Sol_t]
 
-    integ_p = integrate.quad(Integ_p, -10., tau, args=(pars))
-    integ_n = integrate.quad(Integ_n, -10., tau, args=(pars))
+    integ_p = integrate.quad(Integ_p, -80., tau, args=(pars))
+    integ_n = integrate.quad(Integ_n, -80., tau, args=(pars))
 
     return (bh.kappa * integ_p[0]/bh.GeV_in_g)/integ_n[0]
 
@@ -392,17 +400,19 @@ def find_gV_gD(sv, Br_DM, mDM, mX, mf): # Br_DM is the branching fraction of X -
 
 def FBEqs(x, v, nphi, paramsDM, GammaX, p_DM, p_X, Br_DM, FO):
 
-    M     = v[0] # PBH mass
-    ast   = v[1] # PBH ang mom
-    rRad  = v[2] # Radiation energy density
-    rPBH  = v[3] # PBH energy density
-    Tp    = v[4] # Temperature
-    NDMT  = v[5] # Thermal DM number density
-    NDMB  = v[6] # PBH-induced DM number density
-    NX    = v[7] # X number density
+    M    = v[0] # PBH mass
+    ast  = v[1] # PBH ang mom
+    SBH  = v[2] # PBH Bekenstein-Hawking entropy
+    SRad = v[3] # PBH Radiation entropy
+    rRad = v[4] # Radiation energy density
+    rPBH = v[5] # PBH energy density
+    Tp   = v[6] # Temperature
+    NDMT = v[7] # Thermal DM number density
+    NDMB = v[8] # PBH-induced DM number density
+    NX   = v[9] # X number density
 
-    NDMC  = v[8] # Thermal DM number density w/o PBH contribution
-    NDMH  = v[9] # PBH-induced DM number density w/o thermal contact
+    NDMC  = v[10] # Thermal DM number density w/o PBH contribution
+    NDMH  = v[11] # PBH-induced DM number density w/o thermal contact
 
     a = 10.**x
 
@@ -425,6 +435,11 @@ def FBEqs(x, v, nphi, paramsDM, GammaX, p_DM, p_X, Br_DM, FO):
     GDM = bh.gDM(M, ast, mDM, sDM) # DM contribution
     GX  = bh.gX(M, ast, mX)        # Mediator contribution
     GT  = GSM + GDM + GX           # Total Angular Momentum contribution
+
+    ZSM = bh.zSM(M, ast)           # SM contribution
+    ZDM = bh.zDM(M, ast, mDM, sDM) # DM contribution
+    ZX  = bh.zX(M, ast, mX) # DM contribution
+    ZT  = ZSM + ZDM + ZX               # Total Angular Momentum contribution
     
     H   = np.sqrt(8 * pi * bh.GN * (rPBH * a**(-3) + rRad * a**(-4))/3.) # Hubble parameter
     Del = 1. + Tp * bh.dgstarSdT(Tp)/(3. * bh.gstarS(Tp)) # Temperature parameter
@@ -441,14 +456,20 @@ def FBEqs(x, v, nphi, paramsDM, GammaX, p_DM, p_X, Br_DM, FO):
     E_X  = sqrt(mX**2  + p_X_0**2)
     
     rX = E_X*NX*nphi # Mediator Energy density
-    
+
     #----------------------------------------------#
     #    Radiation + PBH + Temperature equations   #
     #----------------------------------------------#
 
-    dM_GeVdx = - FSM/(bh.GN**2 * M_GeV**2)/H   
-    dastdx   = - ast * (GSM - 2.*FSM)/(bh.GN**2 * M_GeV**3)/H
+    # Mass and spin evolution
+    dM_GeVdx = - FT/(bh.GN**2 * M_GeV**2)/H   
+    dastdx   = - ast * (GT - 2.*FT)/(bh.GN**2 * M_GeV**3)/H
 
+    # Evolution of entropies
+    dSBHdx   = - 2. * pi * (2.*FT + (2.*FT - ast**2 * GT)/sqrt(1. - ast**2))/(bh.GN * M_GeV)/H
+    dSRaddx  = ZT/(bh.GN * M_GeV)/H
+
+    # Evolution of SM, PBH energy densities, Temperature and time
     drRaddx = - (FSM/FT) * (dM_GeVdx/M_GeV) * a * rPBH + 2.*(Br_SM*GXt/H) * a * rX
     drPBHdx = + (dM_GeVdx/M_GeV) * rPBH
     dTdx    = - (Tp/Del) * (1.0 + - (bh.gstar(Tp)/bh.gstarS(Tp))*(0.25*drRaddx/rRad))
@@ -466,7 +487,7 @@ def FBEqs(x, v, nphi, paramsDM, GammaX, p_DM, p_X, Br_DM, FO):
     #-----------------------------------------#
     
     dNDMTdx = -(NDMT**2 - NDMeq**2)*svTT*nphi/(H*a**(3))
-        
+
     dNDMBdx = 2.*(Br_DM*GXt/H)*NX + (bh.Gamma_DM(M, ast, mDM, sDM)/H)*(rPBH/(M/bh.GeV_in_g))/nphi
 
     dNXdx  = -NX*GXt/H + (bh.Gamma_V(M, ast, mX)/H)*(rPBH/(M/bh.GeV_in_g))/nphi
@@ -474,10 +495,10 @@ def FBEqs(x, v, nphi, paramsDM, GammaX, p_DM, p_X, Br_DM, FO):
     dNDMCdx = -(NDMC**2 - NDMeq**2)*svTT*nphi/(H*a**(3))                               # Thermal Contribution w/o PBH evap
 
     dNDMHdx = (bh.Gamma_F(M, ast, mDM)/H)*(rPBH/(M/bh.GeV_in_g))/nphi + 2.*(Br_DM*GXt/H)*NX # PBH-induced contribution w/o contact
-    
+
     ##########################################################    
     
-    dEqsdx = [bh.GeV_in_g * dM_GeVdx, dastdx, drRaddx, drPBHdx, dTdx, dNDMTdx, dNDMBdx, dNXdx, dNDMCdx, dNDMHdx]
+    dEqsdx = [bh.GeV_in_g * dM_GeVdx, dastdx, dSBHdx, dSRaddx, drRaddx, drPBHdx, dTdx, dNDMTdx, dNDMBdx, dNXdx, dNDMCdx, dNDMHdx]
 
     return [xeq * log(10.) for xeq in dEqsdx]
 
@@ -617,6 +638,9 @@ class FrInPBH:
         
     
         TBHi   = bh.TBH(Mi, asi)  # Initial BH temperature
+        SRadi = 0. # Initial Radiation entropy
+        SBHi  = 2.*pi*bh.GN*(Mi/bh.GeV_in_g)**2*(1. + sqrt(1. - asi**2)) # Initial Bekenstein-Hawking entropy  -- Dimensionless
+
         
         mDM     = 10**self.mDM    # DM mass in GeV
         mX      = 10**self.mX     # Mediator Mass
@@ -673,7 +697,7 @@ class FrInPBH:
         MPL.terminal  = True
         MPL.direction = -1.
 
-        tau_sol = solve_ivp(fun=lambda t, y: self.ItauFI(t, y, mDM, sDM, mX), t_span = [-10., 40.], y0 = [Mi, asi], 
+        tau_sol = solve_ivp(fun=lambda t, y: self.ItauFI(t, y, mDM, sDM, mX), t_span = [-80., 80.], y0 = [Mi, asi], 
                             events=MPL, rtol=1.e-10, atol=1.e-20, dense_output=True)
 
         Sol_t = tau_sol.sol # Solutions for obtaining <p>
@@ -692,18 +716,32 @@ class FrInPBH:
 
         p_DM = p_average_DM(Mi, asi, mDM, tau, Sol_t)
         p_X  = p_average_med(Mi, asi, mDM, tau, Sol_t)
-        
+
         #-----------------------------------------#
         #          Before BH evaporation          #
         #-----------------------------------------#
+
+        et_test = False # Boolean for whether stopping at Page time
+
+        SBH_Rad = lambda t, x:SBH_Rad_eq(t, x) # Event function to determine the Page time
+        SBH_Rad.terminal  = et_test
+        SBH_Rad.direction = -1.
     
-        v0 = [Mi, asi, rRadi, rPBHi, Ti, 0., 0., 0., 0., 0.]
+        v0 = [Mi, asi, SBHi, SRadi, rRadi, rPBHi, Ti, 0., 0., 0., 0., 0.]
 
         FO = [Ti, 0., 0., 0., 0., 0., 0., 0., 10.] # Temp, a,  <sv's> at DM decoupling, neq, nDM_BH, H
 
         # solve ODE
         solFBE = solve_ivp(lambda t, z: FBEqs(t, z, nphi, paramsDM, G_X, p_DM, p_X, BR, FO),
-                           [0., 1.25*xflog10], v0, method='BDF', events=MPL, rtol=1.e-6, atol=1.e-10)
+                           [0., 5*xflog10], v0, method='BDF', events=(MPL,SBH_Rad), 
+                           dense_output=True, rtol=1.e-6, atol=1.e-10)
+
+        if solFBE.t_events[1].shape[0] > 0:
+            # x_Page = solFBE.t_events[1][0]
+            # t_Page = solFBE.sol(solFBE.t_events[1][0])[7]
+            if not et_test:
+                print(colored("Warning : Page time passed, proceed with caution", "red"))
+                #print(colored("Page time = {0:.6E} * t_ev, PBH mass at Page time = {1:.6E} * Min".format(t_Page/10.**tau, solFBE.sol(x_Page)[0]/Mi),'blue'))
 
         xflog10 = solFBE.t[-1] # We update the value of log(a) at which PBHs evaporate
 
@@ -714,10 +752,11 @@ class FrInPBH:
         
         Tfin = 1.e-2*mDM # Final plasma temp in GeV
         
-        xzmax = xflog10 + np.log10(np.cbrt(bh.gstarS(solFBE.y[4,-1])/bh.gstarS(Tfin))*(solFBE.y[4,-1]/Tfin))
+        xzmax = xflog10 + np.log10(np.cbrt(bh.gstarS(solFBE.y[6,-1])/bh.gstarS(Tfin))*(solFBE.y[6,-1]/Tfin))
         xfmax = max(xflog10, xzmax)
 
-        v0aBE = [solFBE.y[2,-1], solFBE.y[4,-1], solFBE.y[5,-1], solFBE.y[6,-1], solFBE.y[7,-1], solFBE.y[8,-1], solFBE.y[9,-1]]
+        # Order: rad, Tp, NDMT, NDMB, NX, NDMC, NDMH
+        v0aBE = [solFBE.y[4,-1], solFBE.y[6,-1], solFBE.y[7,-1], solFBE.y[8,-1], solFBE.y[9,-1], solFBE.y[10,-1], solFBE.y[11,-1]]
         
         # solve ODE        
         solFBE_aBE = solve_ivp(lambda t, z: FBEqs_aBE(t, z, nphi, paramsDM, G_X, xflog10, bh.TBH(solFBE.y[0,-1],solFBE.y[1,-1]),
@@ -735,14 +774,16 @@ class FrInPBH:
  
         MBH  = np.concatenate((solFBE.y[0,:], np.full(npaf, solFBE.y[0,0])), axis=None)
         ast  = np.concatenate((solFBE.y[1,:], np.zeros(npaf)), axis=None)
-        Rad  = np.concatenate((solFBE.y[2,:], solFBE_aBE.y[0,:]), axis=None)    
-        PBH  = np.concatenate((solFBE.y[3,:], np.zeros(npaf)),  axis=None)
-        T    = np.concatenate((solFBE.y[4,:], solFBE_aBE.y[1,:]), axis=None)
-        NDMT = np.concatenate((solFBE.y[5,:], solFBE_aBE.y[2,:]), axis=None)
-        NDMB = np.concatenate((solFBE.y[6,:], solFBE_aBE.y[3,:]), axis=None)
-        NX   = np.concatenate((solFBE.y[7,:], solFBE_aBE.y[4,:]), axis=None)
-        NDMC = np.concatenate((solFBE.y[8,:], solFBE_aBE.y[5,:]), axis=None)
-        NDMH = np.concatenate((solFBE.y[9,:], solFBE_aBE.y[6,:]), axis=None)
+        SBH  = np.concatenate((solFBE.y[2,:], np.zeros(npaf)), axis=None)
+        SRD  = np.concatenate((solFBE.y[3,:], np.zeros(npaf)), axis=None)
+        Rad  = np.concatenate((solFBE.y[4,:], solFBE_aBE.y[0,:]), axis=None)    
+        PBH  = np.concatenate((solFBE.y[5,:], np.zeros(npaf)),  axis=None)
+        T    = np.concatenate((solFBE.y[6,:], solFBE_aBE.y[1,:]), axis=None)
+        NDMT = np.concatenate((solFBE.y[7,:], solFBE_aBE.y[2,:]), axis=None)
+        NDMB = np.concatenate((solFBE.y[8,:], solFBE_aBE.y[3,:]), axis=None)
+        NX   = np.concatenate((solFBE.y[9,:], solFBE_aBE.y[4,:]), axis=None)
+        NDMC = np.concatenate((solFBE.y[10,:], solFBE_aBE.y[5,:]), axis=None)
+        NDMH = np.concatenate((solFBE.y[11,:], solFBE_aBE.y[6,:]), axis=None)
 
         NDMeq = (mDM**2 * T * kn(2, mDM/T))/(pi**2)
 
@@ -754,7 +795,7 @@ class FrInPBH:
         TDM = np.zeros((npt))
         GXt = np.zeros((npt))
                 
-        Tev=solFBE.y[4,-1]
+        Tev=solFBE.y[6,-1]
                 
         #------------------------------------------------------------#
         #                                                            #
@@ -799,7 +840,7 @@ class FrInPBH:
         ax.axvline(x=1/Tev, alpha=0.5, color = '#4E2A84', linestyle='--')
                 
         ax.set_ylim(max(10**-x*Rad)*1.e-31, max(10**-x*Rad)*1.e-6)
-        ax.set_xlim(1/max([100*Tev,100*mDM,100*mX]), 1/T[-1])
+        ax.set_xlim(1/max([100.*Tev, 100*mDM, 100*mX]), 1/T[-1])
         ax.set_xlabel(r"$1/T$")
         ax.set_ylabel(r"$\rho_{i} a^3$")
         ax.legend(loc="lower left", fontsize = "small")

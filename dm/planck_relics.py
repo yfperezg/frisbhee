@@ -16,6 +16,8 @@ from scipy.interpolate import interp1d, RectBivariateSpline
 
 from math import sqrt, log, exp, log10, pi, atan
 
+from termcolor import colored
+
 from src import bhprop as bh #Schwarzschild and Kerr BHs library
 
 from collections import OrderedDict
@@ -30,6 +32,12 @@ def StopMass(t, v, Mi):
 
     return v[0] - Mst # Function to stop the solver if the BH is equal or smaller than the Planck mass
 
+def SBH_Rad_eq(a, v):
+
+    SBH   = v[2] # PBH Bekenstein-Hawking entropy
+    SRad  = v[3] # PBH Radiation entropy
+    
+    return SBH - SRad # Function to find PBH - Radiation entropy equality
 
 #----------------------------------#
 #   Equations before evaporation   #
@@ -37,13 +45,15 @@ def StopMass(t, v, Mi):
 
 def FBEqs(x, v, Mi, xilog10):
 
-    M     = v[0] # PBH mass
-    ast   = v[1] # PBH ang mom
-    rRad  = v[2] # Radiation energy density
-    rPBH  = v[3] # PBH energy density
-    Tp    = v[4] # Temperature
-    NPR   = v[5] # PBH number density -> To compute Planck Relic density
-    t     = v[6] # time in GeV^-1
+    M    = v[0] # PBH mass, in g
+    ast  = v[1] # PBH ang mom
+    SBH  = v[2] # PBH Bekenstein-Hawking entropy
+    SRad = v[3] # PBH Radiation entropy
+    rRad = v[4] # Radiation energy density
+    rPBH = v[5] # PBH energy density
+    Tp   = v[6] # Temperature
+    t    = v[7] # time in GeV^-1
+    NDPR = v[8] # PBH-induced DM number density
 
     xff = (x + xilog10)
 
@@ -55,8 +65,9 @@ def FBEqs(x, v, Mi, xilog10):
 
     M_GeV = M/bh.GeV_in_g     # PBH mass in GeV
     
-    FSM = bh.fSM(M, ast)           # SM contribution
-    GSM = bh.gSM(M, ast)           # SM contribution
+    FSM = bh.fSM(M, ast) # SM contribution
+    GSM = bh.gSM(M, ast) # SM contribution
+    ZSM = bh.zSM(M, ast) # SM contribution
     
     H   = np.sqrt(8 * pi * bh.GN * (rPBH * a**(-3) + rRad * a**(-4))/3.) # Hubble parameter
     Del = 1. + Tp * bh.dgstarSdT(Tp)/(3. * bh.gstarS(Tp)) # Temperature parameter
@@ -65,9 +76,15 @@ def FBEqs(x, v, Mi, xilog10):
     #    Radiation + PBH + Temperature equations   #
     #----------------------------------------------#
 
+    # Mass and spin evolution
     dM_GeVdx = - FSM/(bh.GN**2 * M_GeV**2)/H   
     dastdx   = - ast * (GSM - 2.*FSM)/(bh.GN**2 * M_GeV**3)/H
 
+    # Evolution of entropies
+    dSBHdx   = - 2. * pi * (2.*FSM + (2.*FSM - ast**2 * GSM)/sqrt(1. - ast**2))/(bh.GN * M_GeV)/H
+    dSRaddx  =   ZSM/(bh.GN * M_GeV)/H
+
+    # Evolution of SM, PBH energy densities, Temperature and time
     drRaddx  = - (dM_GeVdx/M_GeV) * a * rPBH
     drPBHdx  = + (dM_GeVdx/M_GeV) * rPBH
     dTdx    = - (Tp/Del) * (1.0 - (bh.gstar(Tp)/bh.gstarS(Tp))*(0.25*drRaddx/rRad))
@@ -82,7 +99,7 @@ def FBEqs(x, v, Mi, xilog10):
     
     ##########################################################    
     
-    dEqsdx = [bh.GeV_in_g * dM_GeVdx, dastdx, drRaddx, drPBHdx, dTdx, dNPRdx, dtdx]
+    dEqsdx = [bh.GeV_in_g * dM_GeVdx, dastdx, dSBHdx, dSRaddx, drRaddx, drPBHdx, dTdx, dtdx, dNPRdx]
 
     return [xeq * log(10.) for xeq in dEqsdx]
 
@@ -96,6 +113,20 @@ class FBEqs_Sol:
         self.MPBHi  = MPBHi # Log10[M/1g]
         self.aPBHi  = aPBHi # a_star
         self.bPBHi  = bPBHi # Log10[beta']
+
+    
+    def ItauSM(self, tl, v): # Integrand to compute PBH lifetime --> Standard Model + Gravitons
+    
+        M   = v[0]
+        ast = v[1]
+
+        FSM = bh.fSM(M, ast) + bh.gg * bh.phi_g(M, ast, 0.)  # 
+        GSM = bh.gSM(M, ast) + bh.gg * bh.gam_g(M, ast, 0.)  #
+
+        dMdtl   = - log(10.) * 10.**tl * bh.kappa * FSM * M**-2
+        dastdtl = - log(10.) * 10.**tl * ast * bh.kappa * M**-3 * (GSM - 2.*FSM)
+
+        return [dMdtl, dastdtl]
     
 #-------------------------------------------------------------------------------------------------------------------------------------#
 #                                                       Input parameters                                                              #
@@ -119,6 +150,9 @@ class FBEqs_Sol:
         
         ti = (np.sqrt(45./(16.*np.pi**3.*bh.gstar(Ti)*bh.GN))*Ti**-2) # Initial time, assuming a Radiation dom Universe
 
+        SRadi = 0. # Initial Radiation entropy
+        SBHi  = 2.*pi*bh.GN*(Mi/bh.GeV_in_g)**2*(1. + sqrt(1. - asi**2)) # Initial Bekenstein-Hawking entropy  -- Dimensionless
+
         #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++#
         #                                           Solving the equations                                                   #
         #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++#
@@ -131,6 +165,8 @@ class FBEqs_Sol:
         xBE    = []
         MBHBE  = []
         astBE  = []
+        SBHBE  = []
+        SRDBE  = []
         RadBE  = []
         PBHBE  = []
         TBE    = []
@@ -138,6 +174,9 @@ class FBEqs_Sol:
         tmBE   = []
     
         i = 0
+
+        t_Page = 0.        # Starting the Page time
+        dens_out = True    # For the solver to give a continous solution and compute the Page time
         
         while Mi >= 2. * bh.MPL:
 
@@ -145,7 +184,7 @@ class FBEqs_Sol:
             #         Computing PBH lifetime and scale factor in which BHs evaporate         #
             #--------------------------------------------------------------------------------#
             
-            tau_sol = solve_ivp(fun=lambda t, y: bh.ItauSM(t, y), t_span = [-80, 40.], y0 = [Mi, asi], 
+            tau_sol = solve_ivp(fun=lambda t, y: self.ItauSM(t, y), t_span = [-80, 40.], y0 = [Mi, asi], 
                                 rtol=1.e-5, atol=1.e-20, dense_output=True)
             
             if i == 0:
@@ -168,8 +207,14 @@ class FBEqs_Sol:
             StopM = lambda t, x:StopMass(t, x, Mi) # Event to stop when the mass is 1% of the initial mass
             StopM.terminal  = True
             StopM.direction = -1.
+
+            et_test = False # Boolean for whether stopping at Page time
+
+            SBH_Rad = lambda t, x:SBH_Rad_eq(t, x) # Event function to determine the Page time
+            SBH_Rad.terminal  = et_test
+            SBH_Rad.direction = -1.
             
-            v0 = [Mi, asi, rRadi, rPBHi, Ti, NPRi, ti]
+            v0 = [Mi, asi, SBHi, SRadi, rRadi, rPBHi, Ti, NPRi, ti]
 
             if self.MPBHi >= 8.:
                 if self.bPBHi > -15.:
@@ -181,33 +226,53 @@ class FBEqs_Sol:
             else:
                 atol=1.e-15
                 meth='BDF'
+
+            if t_Page > 0.: dens_out = False # Once the Page time is saved, we don't compute a continous solution 
             
             # solve ODE
-        
             solFBE = solve_ivp(lambda t, z: FBEqs(t, z, Mi, xilog10),
-                               [0., 1.05*abs(xflog10)], v0, method=meth, events=StopM, rtol=1.e-7, atol=atol) 
+                               [0., 1.05*abs(xflog10)], v0, method=meth, events=(StopM,SBH_Rad),
+                               dense_output=dens_out, rtol=1.e-7, atol=atol) 
+
+            if not solFBE.success: 
+                print(solFBE)
+                print(colored("didn't work!",'red'))
+                exit()
 
             if solFBE.t[-1] < 0.:
                 print(solFBE)
                 print(xfw, tau, 1.05*xflog10)
                 break
 
+            if solFBE.t_events[1].shape[0] > 0:
+                x_Page = solFBE.t_events[1][0]
+                t_Page = solFBE.sol(solFBE.t_events[1][0])[7]
+                if not et_test:
+                    print(colored("Warning : Page time passed, proceed with caution", "red"))
+                    print(colored("Page time = {0:.6E} * t_ev, PBH mass at Page time = {1:.6E} * Min".format(t_Page/10.**tau, solFBE.sol(x_Page)[0]/Min),'blue'))
+
+                if et_test: break
+
             xBE   = np.append(xBE,    solFBE.t[:] + xilog10)
             MBHBE = np.append(MBHBE,  solFBE.y[0,:])
             astBE = np.append(astBE,  solFBE.y[1,:])
-            RadBE = np.append(RadBE,  solFBE.y[2,:])
-            PBHBE = np.append(PBHBE,  solFBE.y[3,:])
-            TBE   = np.append(TBE,    solFBE.y[4,:])
-            NPRBE = np.append(NPRBE,  solFBE.y[5,:])
-            tmBE  = np.append(tmBE,   solFBE.y[6,:])
+            SBHBE  = np.append(SBHBE, solFBE.y[2,:])
+            SRDBE  = np.append(SRDBE, solFBE.y[3,:])
+            RadBE = np.append(RadBE,  solFBE.y[4,:])
+            PBHBE = np.append(PBHBE,  solFBE.y[5,:])
+            TBE   = np.append(TBE,    solFBE.y[6,:])
+            tmBE  = np.append(tmBE,   solFBE.y[7,:])
+            NPRBE = np.append(NPRBE,  solFBE.y[8,:])
             
             Mi    = solFBE.y[0,-1]
             asi   = solFBE.y[1,-1]
-            rRadi = solFBE.y[2,-1]
-            rPBHi = solFBE.y[3,-1]
-            Ti    = solFBE.y[4,-1]
-            NPRi  = solFBE.y[5,-1]
-            ti    = solFBE.y[6,-1]
+            SBHi  = solFBE.y[2,-1]
+            SRadi = solFBE.y[3,-1]
+            rRadi = solFBE.y[4,-1]
+            rPBHi = solFBE.y[5,-1]
+            Ti    = solFBE.y[6,-1]
+            ti    = solFBE.y[7,-1]
+            NPRi  = solFBE.y[8,-1]
             
             xilog10 += solFBE.t[-1]
 
@@ -224,7 +289,7 @@ class FBEqs_Sol:
 
         Tev = TBE[-1]
                 
-        return [xBE, tmBE, MBHBE, astBE, RadBE, PBHBE, TBE, NPRBE, Tev]
+        return [xBE, tmBE, MBHBE, astBE, SBHBE, SRDBE, RadBE, PBHBE, TBE, NPRBE, Tev]
     
     #------------------------------------------------------------#
     #                                                            #
@@ -237,7 +302,7 @@ class FBEqs_Sol:
         This function directly returns Omega_h2, using the solution above
         '''
 
-        x, t, MBH, ast, Rad, PBH, TUn, NPR, Tev = self.Solt()
+        x, t, MBH, ast, SBH, SRD, Rad, PBH, TUn, NPR, Tev = self.Solt()
         
         rc = 1.053672e-5*bh.cm_in_invkeV**-3*1.e-18   # Critical density in GeV^3
         

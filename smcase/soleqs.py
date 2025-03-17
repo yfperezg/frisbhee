@@ -248,7 +248,7 @@ class FBEqs_Sol:
 
         dens_out = True
         
-        while Mi >= 10. * bh.MPL: # We evolve until the PBH mass is equal to the Planck mass
+        while Mi >= 100. * bh.MPL: # Loop on the solver such that BH mass reaches 100.*M_Planck
 
             #--------------------------------------------------------------------------------#
             #         Computing PBH lifetime and scale factor in which BHs evaporate         #

@@ -83,7 +83,7 @@ while Mi < 9.:
         
         Oh2 = FBEqs_Sol(Mi, asi, bi, mDM, sDM)
 
-        x, t, MBH, ast, Rad, PBH, TUn, NDBE, Tev  = Oh2.Solt()
+        x, t, MBH, ast, SBH, SRad, Rad, PBH, TUn, NDBE, Tev  = Oh2.Solt()
         
         nphi = (2.*zeta(3)/np.pi**2)*TUn[0]**3             # Initial photon number density
         

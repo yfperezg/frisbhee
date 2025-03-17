@@ -30,7 +30,7 @@ mDM  = 0.
 
 Oh2m = FBEqs_Sol(Mi, asi, bi)
 
-xm, tm, MBHm, astm, Radm, PBHm, TUnm, NPRm, Tev  = Oh2m.Solt()
+xm, tm, MBHm, astm, SBHm, SRDm, Radm, PBHm, TUnm, NPRm, Tev  = Oh2m.Solt()
 
 end = time.time()
 

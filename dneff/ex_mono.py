@@ -59,7 +59,7 @@ Dic_sDR = {0.:'scl', 0.5:'fer', 1.:'vec', 2.:'gra'}
 
 Oh2m = FBEqs_Sol(Mi, asi, bi, sDR)
 
-a, t, MBH, ast, Rad, PBH, TUn, DRad  = Oh2m.Solt()
+a, t, MBH, ast, SBH, SRD, Rad, PBH, TUn, DRad  = Oh2m.Solt()
 
 # Saving the arrays...
 

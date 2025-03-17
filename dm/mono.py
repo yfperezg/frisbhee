@@ -61,6 +61,13 @@ def StopMass(t, v, Mi):
 
     return v[0] - Mst # Function to stop the solver if the BH is equal or smaller than the Planck mass
 
+def SBH_Rad_eq(a, v):
+
+    SBH   = v[2] # PBH Bekenstein-Hawking entropy
+    SRad  = v[3] # PBH Radiation entropy
+    
+    return SBH - SRad # Function to find PBH - Radiation entropy equality
+
 #----------------------------------#
 #   Equations before evaporation   #
 #----------------------------------#
@@ -69,11 +76,13 @@ def FBEqs(x, v, nphi, mDM, sDM, xilog10):
 
     M    = v[0] # PBH mass
     ast  = v[1] # PBH ang mom
-    rRad = v[2] # Radiation energy density
-    rPBH = v[3] # PBH energy density
-    Tp   = v[4] # Temperature
-    NDMH = v[5] # PBH-induced DM number density
-    t    = v[6] # time in GeV^-1
+    SBH  = v[2] # PBH Bekenstein-Hawking entropy
+    SRad = v[3] # PBH Radiation entropy
+    rRad = v[4] # Radiation energy density
+    rPBH = v[5] # PBH energy density
+    Tp   = v[6] # Temperature
+    t    = v[7] # time in GeV^-1
+    NDMH = v[8] # PBH-induced DM number density
 
     xff = (x + xilog10)
 
@@ -92,6 +101,10 @@ def FBEqs(x, v, nphi, mDM, sDM, xilog10):
     GSM = bh.gSM(M, ast)           # SM contribution
     GDM = bh.gDM(M, ast, mDM, sDM) # DM contribution
     GT  = GSM + GDM                # Total Angular Momentum contribution
+
+    ZSM = bh.zSM(M, ast)           # SM contribution
+    ZDM = bh.zDM(M, ast, mDM, sDM) # DM contribution
+    ZT  = ZSM + ZDM                # Total Angular Momentum contribution
     
     H   = np.sqrt(8 * pi * bh.GN * (rPBH * a**(-3) + rRad * a**(-4))/3.) # Hubble parameter
     Del = 1. + Tp * bh.dgstarSdT(Tp)/(3. * bh.gstarS(Tp)) # Temperature parameter
@@ -100,9 +113,15 @@ def FBEqs(x, v, nphi, mDM, sDM, xilog10):
     #    Radiation + PBH + Temperature equations   #
     #----------------------------------------------#
 
+    # Mass and spin evolution
     dM_GeVdx = - FT/(bh.GN**2 * M_GeV**2)/H   
     dastdx   = - ast * (GT - 2.*FT)/(bh.GN**2 * M_GeV**3)/H
 
+    # Evolution of entropies
+    dSBHdx   = - 2. * pi * (2.*FT + (2.*FT - ast**2 * GT)/sqrt(1. - ast**2))/(bh.GN * M_GeV)/H
+    dSRaddx  =   ZT/(bh.GN * M_GeV)/H
+
+    # Evolution of SM, PBH energy densities, Temperature and time
     drRaddx  = - (FSM/FT) * (dM_GeVdx/M_GeV) * a * rPBH
     drPBHdx  = + (dM_GeVdx/M_GeV) * rPBH
     dTdx     = - (Tp/Del) * (1.0 - (bh.gstar(Tp)/bh.gstarS(Tp))*(0.25*drRaddx/rRad))
@@ -117,7 +136,7 @@ def FBEqs(x, v, nphi, mDM, sDM, xilog10):
     
     ##########################################################    
     
-    dEqsdx = [bh.GeV_in_g * dM_GeVdx, dastdx, drRaddx, drPBHdx, dTdx, dNDMHdx, dtdx]
+    dEqsdx = [bh.GeV_in_g * dM_GeVdx, dastdx, dSBHdx, dSRaddx, drRaddx, drPBHdx, dTdx, dtdx, dNDMHdx]
 
     return [xeq * log(10.) for xeq in dEqsdx]
 
@@ -220,6 +239,9 @@ class FBEqs_Sol:
         mDM  = 10**self.mDM # DM mass in GeV
         sDM  = self.sDM     # DM spin
 
+        SRadi = 0. # Initial Radiation entropy
+        SBHi  = 2.*pi*bh.GN*(Mi/bh.GeV_in_g)**2*(1. + sqrt(1. - asi**2)) # Initial Bekenstein-Hawking entropy  -- Dimensionless
+
         #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++#
         #                                           Solving the equations                                                   #
         #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++#
@@ -229,6 +251,8 @@ class FBEqs_Sol:
         xBE    = []
         MBHBE  = []
         astBE  = []
+        SBHBE  = []
+        SRDBE  = []
         RadBE  = []
         PBHBE  = []
         TBE    = []
@@ -236,6 +260,10 @@ class FBEqs_Sol:
         tmBE   = []
 
         i  = 0
+
+        t_Page = 0.        # Starting the Page time
+        dens_out = True    # For the solver to compute the Page time
+        Min    = Mi        # SAving initial mass
         
         while Mi >= 100. * bh.MPL:# Loop on the solver such that BH mass reaches 100.*M_Planck
 
@@ -264,8 +292,14 @@ class FBEqs_Sol:
             StopM = lambda t, x:StopMass(t, x, Mi) # Event to stop when the mass is 1% of the initial mass
             StopM.terminal  = True
             StopM.direction = -1.
+
+            et_test = False # Boolean for whether stopping at Page time
+
+            SBH_Rad = lambda t, x:SBH_Rad_eq(t, x) # Event function to determine the Page time
+            SBH_Rad.terminal  = et_test
+            SBH_Rad.direction = -1.
             
-            v0 = [Mi, asi, rRadi, rPBHi, Ti, NDMHi, ti]
+            v0 = [Mi, asi, SBHi, SRadi, rRadi, rPBHi, Ti, ti, NDMHi]
 
             if self.MPBHi >= 7.:
                 if self.bPBHi > -15.:
@@ -277,10 +311,13 @@ class FBEqs_Sol:
             else:
                 atol=1.e-9
                 meth='BDF'
+
+            if t_Page > 0.: dens_out = False # Once the Page time is saved, we don't compute a continous solution 
             
             # solve ODE
             solFBE = solve_ivp(lambda t, z: FBEqs(t, z, nphi, mDM, sDM, xilog10),
-                               [0., 1.05*abs(xflog10)], v0, method=meth, events=StopM, rtol=1.e-7, atol=atol) 
+                               [0., 1.05*abs(xflog10)], v0, method=meth, events=(StopM,SBH_Rad), 
+                               dense_output=dens_out, rtol=1.e-7, atol=atol) 
             
             if not solFBE.success: 
                 print(solFBE)
@@ -292,26 +329,39 @@ class FBEqs_Sol:
                 print(xfw, tau, 1.05*xflog10)
                 break
 
+            if solFBE.t_events[1].shape[0] > 0:
+                x_Page = solFBE.t_events[1][0]
+                t_Page = solFBE.sol(solFBE.t_events[1][0])[7]
+                if not et_test:
+                    print(colored("Warning : Page time passed, proceed with caution", "red"))
+                    print(colored("Page time = {0:.6E} * t_ev, PBH mass at Page time = {1:.6E} * Min".format(t_Page/10.**tau, solFBE.sol(x_Page)[0]/Min),'blue'))
+
+                if et_test: break
+
             # Concatenating solutions
             
             xBE    = np.append(xBE,    solFBE.t[:] + xilog10)
             MBHBE  = np.append(MBHBE,  solFBE.y[0,:])
             astBE  = np.append(astBE,  solFBE.y[1,:])
-            RadBE  = np.append(RadBE,  solFBE.y[2,:])
-            PBHBE  = np.append(PBHBE,  solFBE.y[3,:])
-            TBE    = np.append(TBE,    solFBE.y[4,:])
-            NDMHBE = np.append(NDMHBE, solFBE.y[5,:])
-            tmBE   = np.append(tmBE,   solFBE.y[6,:])
+            SBHBE  = np.append(SBHBE,  solFBE.y[2,:])
+            SRDBE  = np.append(SRDBE,  solFBE.y[3,:])
+            RadBE  = np.append(RadBE,  solFBE.y[4,:])
+            PBHBE  = np.append(PBHBE,  solFBE.y[5,:])
+            TBE    = np.append(TBE,    solFBE.y[6,:])
+            tmBE   = np.append(tmBE,   solFBE.y[7,:])
+            NDMHBE = np.append(NDMHBE, solFBE.y[8,:])
 
             # Updating values of initial parameters
             
             Mi    = solFBE.y[0,-1]
             asi   = solFBE.y[1,-1]
-            rRadi = solFBE.y[2,-1]
-            rPBHi = solFBE.y[3,-1]
-            Ti    = solFBE.y[4,-1]
-            NDMHi = solFBE.y[5,-1]
-            ti    = solFBE.y[6,-1]
+            SBHi  = solFBE.y[2,-1]
+            SRadi = solFBE.y[3,-1]
+            rRadi = solFBE.y[4,-1]
+            rPBHi = solFBE.y[5,-1]
+            Ti    = solFBE.y[6,-1]
+            ti    = solFBE.y[7,-1]
+            NDMHi = solFBE.y[8,-1]
             
             xilog10 += solFBE.t[-1]
 
@@ -328,7 +378,7 @@ class FBEqs_Sol:
 
         Tev = TBE[-1]
                         
-        return [xBE, tmBE, MBHBE, astBE, RadBE, PBHBE, TBE, NDMHBE, Tev]
+        return [xBE, tmBE, MBHBE, astBE, SBHBE, SRDBE, RadBE, PBHBE, TBE, NDMHBE, Tev]
 
     #------------------------------------------------------------#
     #                                                            #
@@ -341,7 +391,7 @@ class FBEqs_Sol:
         This function directly returns Omega_h2, using the solution above
         '''
 
-        x, t, MBH, ast, Rad, PBH, TUn, NDMH, Tev = self.Solt()
+        x, t, MBH, ast, SBH, SRD, Rad, PBH, TUn, NDMH, Tev = self.Solt()
         
         nphi = (2.*zeta(3)/np.pi**2)*TUn[0]**3             # Initial photon number density
         
