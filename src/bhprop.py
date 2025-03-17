@@ -1298,24 +1298,6 @@ def ItauSM(tl, v): # Standard Model + Gravitons
 
     return [dMdtl, dastdtl]
 
-def ItauFO(tl, v, mDM, sDM): # Freeze Out case
-    
-    M   = v[0]
-    ast = v[1]
-
-    FSM = fSM(M, ast)
-    FDM = fDM(M, ast, mDM, sDM) # DM evaporation contribution
-    FT  = FSM + FDM             # Total Evaporation contribution
-
-    GSM = gSM(M, ast)
-    GDM = gDM(M, ast, mDM, sDM) # DM evaporation contribution
-    GT  = GSM + GDM             # Total Evaporation contribution
-
-    dMdtl   = - log(10.) * 10.**tl * kappa * FT * M**-2
-    dastdtl = - log(10.) * 10.**tl * ast * kappa * M**-3 * (GT - 2.*FT)
-
-    return [dMdtl, dastdtl]
-
 def ItauDR(tl, v, s): # Dark Radiation Case
     
     M   = v[0]
@@ -1331,26 +1313,6 @@ def ItauDR(tl, v, s): # Dark Radiation Case
 
     dMdtl   = - log(10.) * 10.**tl * kappa * FT * M**-2
     dastdtl = - log(10.) * 10.**tl * ast * kappa * M**-3 * (GT - 2.*FT)
-
-    return [dMdtl, dastdtl]
-
-def ItauFI(tl, v, mDM, sDM, mX): # Freeze In case (Including mediator)
-    
-    M   = v[0]/GeV_in_g          # PBH mass in GeV
-    ast = v[1]
-
-    FSM = fSM(M, ast)
-    FDM = fDM(M, ast, mDM, sDM) # DM evaporation contribution
-    FX  = fX(M, ast, mX)        # Mediator contribution
-    FT  = FSM + FDM + FX        # Total Evaporation contribution
-
-    GSM = gSM(M, ast)
-    GDM = gDM(M, ast, mDM, sDM) # DM evaporation contribution
-    GX  = gX(M, ast, mX)        # Mediator contribution
-    GT  = GSM + GDM + GX        # Total Evaporation contribution
-
-    dMdtl   = - log(10.) * 10.**tl * FT/(GN**2 * M**2)
-    dastdtl = - log(10.) * 10.**tl * ast * (GT - 2.*FT)/(GN**2 * M**3)
 
     return [dMdtl, dastdtl]
 

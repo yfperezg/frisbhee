@@ -186,6 +186,20 @@ class FBEqs_Sol:
         self.et_test = et_test # Boolean for whether stopping at Page time 
 
 
+    def ItauSM(self, tl, v): # Integrand to compute PBH lifetime --> Standard Model + Gravitons
+    
+        M   = v[0]
+        ast = v[1]
+
+        FSM = bh.fSM(M, ast) + bh.gg * bh.phi_g(M, ast, 0.)  # 
+        GSM = bh.gSM(M, ast) + bh.gg * bh.gam_g(M, ast, 0.)  #
+
+        dMdtl   = - log(10.) * 10.**tl * bh.kappa * FSM * M**-2
+        dastdtl = - log(10.) * 10.**tl * ast * bh.kappa * M**-3 * (GSM - 2.*FSM)
+
+        return [dMdtl, dastdtl]
+
+
     #+++++++++++++++++++++++++++++++ Main Function +++++++++++++++++++++++++++++++#
     
     def Solt(self):
@@ -240,7 +254,7 @@ class FBEqs_Sol:
             #         Computing PBH lifetime and scale factor in which BHs evaporate         #
             #--------------------------------------------------------------------------------#
             
-            tau_sol = solve_ivp(fun=lambda t, y: bh.ItauSM(t, y), t_span = [-80, 40.], y0 = [Mi, asi], 
+            tau_sol = solve_ivp(fun=lambda t, y: self.ItauSM(t, y), t_span = [-80, 40.], y0 = [Mi, asi], 
                                 rtol=1.e-5, atol=1.e-20, dense_output=True)
             
             if i == 0:

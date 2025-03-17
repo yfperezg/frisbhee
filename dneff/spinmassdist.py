@@ -202,6 +202,24 @@ def dastdt(M, ast, sDR):
 #     Solving the PBH evolution from initial mass to Planck mass      #
 #---------------------------------------------------------------------#
 
+def ItauDR(tl, v, s): # Dark Radiation Case
+
+    M   = v[0]
+    ast = v[1]
+
+    FSM = bh.fSM(M, ast)
+    FDR = bh.fDR(M, ast, s) # DM evaporation contribution
+    FT  = FSM + FDR      # Total Evaporation contribution
+
+    GSM = bh.gSM(M, ast)
+    GDR = bh.gDR(M, ast, s) # DM evaporation contribution
+    GT  = GSM + GDR      # Total Evaporation contribution
+
+    dMdtl   = - log(10.) * 10.**tl * bh.kappa * FT * M**-2
+    dastdtl = - log(10.) * 10.**tl * ast * bh.kappa * M**-3 * (GT - 2.*FT)
+
+    return [dMdtl, dastdtl]
+
 def PBH_time_ev(Mi, asi, sDR):
     
     tBE    = []
@@ -225,7 +243,7 @@ def PBH_time_ev(Mi, asi, sDR):
         MPL.terminal  = True
         MPL.direction = -1.
             
-        tau_sol = solve_ivp(fun=lambda t, y: bh.ItauDR(t, y, sDR), t_span = [-80., 40.], y0 = [Mi, asi], 
+        tau_sol = solve_ivp(fun=lambda t, y: ItauDR(t, y, sDR), t_span = [-80., 40.], y0 = [Mi, asi], 
                             events=MPL, rtol=1.e-10, atol=1.e-15)
 
         tau = tau_sol.t[-1] # Log10@PBH lifetime in inverse GeV
@@ -261,7 +279,7 @@ def tau(Mi, asi, sDR):
     MPL.terminal  = True
     MPL.direction = -1.
     
-    tau_sol = solve_ivp(fun=lambda t, y: bh.ItauDR(t, y, sDR), t_span = [-80., 40.], y0 = [Mi, asi], 
+    tau_sol = solve_ivp(fun=lambda t, y: ItauDR(t, y, sDR), t_span = [-80., 40.], y0 = [Mi, asi], 
                         events=MPL, rtol=1.e-5, atol=1.e-15)
     
     taut = tau_sol.t[-1] # Log10@PBH lifetime in inverse GeV 
