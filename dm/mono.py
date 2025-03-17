@@ -65,7 +65,7 @@ def StopMass(t, v, Mi):
 #   Equations before evaporation   #
 #----------------------------------#
 
-def FBEqs(x, v, nphi, mDM, sDM, Mi, xilog10):
+def FBEqs(x, v, nphi, mDM, sDM, xilog10):
 
     M    = v[0] # PBH mass
     ast  = v[1] # PBH ang mom
@@ -175,6 +175,26 @@ class FBEqs_Sol:
         self.bPBHi  = bPBHi # Log10[beta']
         self.mDM    = mDM
         self.sDM    = sDM
+
+    def ItauFO(self, tl, v, mDM, sDM): # Freeze Out case
+    
+        M   = v[0] 
+        ast = v[1]
+
+        FSM = bh.fSM(M, ast)
+        FDM = bh.fDM(M, ast, mDM, sDM) # DM evaporation contribution
+        FT  = FSM + FDM             # Total Evaporation contribution
+
+        GSM = bh.gSM(M, ast)
+        GDM = bh.gDM(M, ast, mDM, sDM) # DM evaporation contribution
+        GT  = GSM + GDM             # Total Evaporation contribution
+
+        M_GeV = M/bh.GeV_in_g # BH mass in GeV
+
+        dMdtl   = - log(10.) * 10.**tl * FT * (bh.GN * M_GeV)**-2
+        dastdtl = - log(10.) * 10.**tl * ast * bh.GN**-2 * M_GeV**-3 * (GT - 2.*FT)
+
+        return [bh.GeV_in_g * dMdtl, dastdtl]
     
 #-------------------------------------------------------------------------------------------------------------------------------------#
 #                                                       Input parameters                                                              #
@@ -223,7 +243,7 @@ class FBEqs_Sol:
             #         Computing PBH lifetime and scale factor in which BHs evaporate         #
             #--------------------------------------------------------------------------------#
             
-            tau_sol = solve_ivp(fun=lambda t, y: bh.ItauFO(t, y, mDM, sDM), t_span = [-80, 40.], y0 = [Mi, asi], 
+            tau_sol = solve_ivp(fun=lambda t, y: self.ItauFO(t, y, mDM, sDM), t_span = [-80, 40.], y0 = [Mi, asi], 
                                  rtol=1.e-5, atol=1.e-20, dense_output=True)
             
             if i == 0:
@@ -259,7 +279,7 @@ class FBEqs_Sol:
                 meth='BDF'
             
             # solve ODE
-            solFBE = solve_ivp(lambda t, z: FBEqs(t, z, nphi, mDM, sDM, Mi, xilog10),
+            solFBE = solve_ivp(lambda t, z: FBEqs(t, z, nphi, mDM, sDM, xilog10),
                                [0., 1.05*abs(xflog10)], v0, method=meth, events=StopM, rtol=1.e-7, atol=atol) 
             
             if not solFBE.success: 

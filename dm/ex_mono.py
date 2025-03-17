@@ -39,7 +39,7 @@ import time
 #----------------------------------------#
 
 Mi   = 5.  # Peak mass in g at formation  --> Taken here as a parameter
-asi  = 0.99999  # PBH initial rotation a_star factor
+asi  = 0.  # PBH initial rotation a_star factor
 bi   = -3. # Initial PBH fraction 
 mDM  = 1.  # Log10 @ Dark Matter mass
 sDM  = 2.  # Dark Mater spin
