@@ -578,6 +578,28 @@ class FrInPBH:
         self.BR     = BR
         self.g_DM   = g_DM
         self.model  = model
+
+    def ItauFI(self, tl, v, mDM, sDM, mX): # Freeze In case (Including mediator)
+    
+        M   = v[0]          # PBH mass in GeV
+        ast = v[1]
+
+        FSM = bh.fSM(M, ast)
+        FDM = bh.fDM(M, ast, mDM, sDM) # DM evaporation contribution
+        FX  = bh.fX(M, ast, mX)        # Mediator contribution
+        FT  = FSM + FDM + FX        # Total Evaporation contribution
+
+        GSM = bh.gSM(M, ast)
+        GDM = bh.gDM(M, ast, mDM, sDM) # DM evaporation contribution
+        GX  = bh.gX(M, ast, mX)        # Mediator contribution
+        GT  = GSM + GDM + GX        # Total Evaporation contribution
+
+        M_GeV = M/bh.GeV_in_g
+
+        dMdtl   = - log(10.) * 10.**tl * FT/(bh.GN**2 * M**2)
+        dastdtl = - log(10.) * 10.**tl * ast * (GT - 2.*FT)/(bh.GN**2 * M**3)
+
+        return [bh.GeV_in_g * dMdtl, dastdtl]
     
 #------------------------------------------------------------------------------------------------------------------------------------#
 #                                                       Input parameters                                                             #
@@ -651,7 +673,7 @@ class FrInPBH:
         MPL.terminal  = True
         MPL.direction = -1.
 
-        tau_sol = solve_ivp(fun=lambda t, y: bh.ItauFI(t, y, mDM, sDM, mX), t_span = [-10., 40.], y0 = [Mi, asi], 
+        tau_sol = solve_ivp(fun=lambda t, y: self.ItauFI(t, y, mDM, sDM, mX), t_span = [-10., 40.], y0 = [Mi, asi], 
                             events=MPL, rtol=1.e-10, atol=1.e-20, dense_output=True)
 
         Sol_t = tau_sol.sol # Solutions for obtaining <p>

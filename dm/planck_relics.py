@@ -237,14 +237,12 @@ class FBEqs_Sol:
         This function directly returns Omega_h2, using the solution above
         '''
 
-        x, t, MBH, ast, Rad, PBH, TUn, NDMH, Tev = self.Solt()
-        
-        nphi = (2.*zeta(3)/np.pi**2)*TUn[0]**3             # Initial photon number density
+        x, t, MBH, ast, Rad, PBH, TUn, NPR, Tev = self.Solt()
         
         rc = 1.053672e-5*bh.cm_in_invkeV**-3*1.e-18   # Critical density in GeV^3
         
         T0 = 2.34865e-13  # Temperature today in GeV
         
-        Oh2  = NDMH[-1] * nphi * 10.**(-3.*x[-1]) * 10.**self.mDM * (bh.gstarS(T0)/bh.gstarS(Tev))*(T0/Tev)**3*(1/rc)
+        Oh2  = NPR[-1] * 10.**(-3.*x[-1]) * bh.mPL * (bh.gstarS(T0)/bh.gstarS(Tev))*(T0/Tev)**3*(1/rc)
 
         return Oh2

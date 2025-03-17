@@ -143,6 +143,26 @@ def dMdt(M, ast, mDM, sDM):
 #     Solving the PBH evolution from initial mass to Planck mass      #
 #---------------------------------------------------------------------#
 
+def ItauFO(tl, v, mDM, sDM): # Freeze Out case
+
+    M   = v[0] 
+    ast = v[1]
+
+    FSM = bh.fSM(M, ast)
+    FDM = bh.fDM(M, ast, mDM, sDM) # DM evaporation contribution
+    FT  = FSM + FDM             # Total Evaporation contribution
+
+    GSM = bh.gSM(M, ast)
+    GDM = bh.gDM(M, ast, mDM, sDM) # DM evaporation contribution
+    GT  = GSM + GDM             # Total Evaporation contribution
+
+    M_GeV = M/bh.GeV_in_g # BH mass in GeV
+
+    dMdtl   = - log(10.) * 10.**tl * FT * (bh.GN * M_GeV)**-2
+    dastdtl = - log(10.) * 10.**tl * ast * bh.GN**-2 * M_GeV**-3 * (GT - 2.*FT)
+
+    return [bh.GeV_in_g * dMdtl, dastdtl]
+
 def PBH_time_ev(Mi, asi, mDM, sDM):
     
     tBE    = []
@@ -166,7 +186,7 @@ def PBH_time_ev(Mi, asi, mDM, sDM):
         MPL_A.terminal  = True
         MPL_A.direction = -1.
             
-        tau_sol = solve_ivp(fun=lambda t, y: bh.ItauFO(t, y, mDM, sDM), t_span = [-80., 40.], y0 = [Mi, asi], 
+        tau_sol = solve_ivp(fun=lambda t, y: ItauFO(t, y, mDM, sDM), t_span = [-80., 40.], y0 = [Mi, asi], 
                             events=MPL_A, rtol=1.e-10, atol=1.e-15)
 
         tau = tau_sol.t[-1] # Log10@PBH lifetime in inverse GeV
@@ -189,7 +209,7 @@ def tau(Mi, asi, mDM, sDM):
     
     taut = -80.
         
-    tau_sol = solve_ivp(fun=lambda t, y: bh.ItauFO(t, y, mDM, sDM), t_span = [-80., 40.], y0 = [Mi, asi], 
+    tau_sol = solve_ivp(fun=lambda t, y: ItauFO(t, y, mDM, sDM), t_span = [-80., 40.], y0 = [Mi, asi], 
                         rtol=1.e-5, atol=1.e-15)
          
     taut = tau_sol.t[-1]
